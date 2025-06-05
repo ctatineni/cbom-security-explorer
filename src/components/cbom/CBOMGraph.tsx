@@ -10,6 +10,7 @@ import {
   MiniMap,
   Node,
   Edge,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CryptoNode } from './CryptoNode';
@@ -154,7 +155,7 @@ export const CBOMGraph: React.FC<CBOMGraphProps> = ({ data, onNodeSelect, select
             }
           }}
         />
-        <Background variant="dots" gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
   );
