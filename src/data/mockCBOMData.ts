@@ -7,6 +7,36 @@ export const mockCBOMData = {
     lastAnalyzed: "2024-01-15",
   },
   
+  services: [
+    {
+      id: "auth-service",
+      name: "Authentication Service",
+      version: "1.3.0",
+      description: "Handles user authentication and authorization",
+      riskLevel: "low",
+      cryptoAlgorithms: ["aes-256", "rsa-2048", "sha-256"],
+      libraries: ["openssl", "bouncy-castle"]
+    },
+    {
+      id: "payment-service", 
+      name: "Payment Service",
+      version: "2.0.1",
+      description: "Processes payment transactions",
+      riskLevel: "high",
+      cryptoAlgorithms: ["aes-256", "rsa-2048", "des"],
+      libraries: ["openssl", "legacy-crypto"]
+    },
+    {
+      id: "data-service",
+      name: "Data Processing Service", 
+      version: "1.5.2",
+      description: "Handles data storage and retrieval",
+      riskLevel: "medium",
+      cryptoAlgorithms: ["aes-256", "sha-256", "md5"],
+      libraries: ["openssl", "bouncy-castle"]
+    }
+  ],
+  
   metrics: {
     secure: 8,
     warnings: 3,

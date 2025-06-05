@@ -3,8 +3,20 @@ import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 
-export const CryptoNode = memo(({ data }) => {
-  const getRiskColor = (risk) => {
+interface CryptoNodeData {
+  name: string;
+  type: string;
+  keySize: string;
+  riskLevel: 'high' | 'medium' | 'low';
+  deprecated?: boolean;
+}
+
+interface CryptoNodeProps {
+  data: CryptoNodeData;
+}
+
+export const CryptoNode = memo(({ data }: CryptoNodeProps) => {
+  const getRiskColor = (risk: string) => {
     switch (risk) {
       case 'high': return 'border-red-500 bg-red-50';
       case 'medium': return 'border-yellow-500 bg-yellow-50';
@@ -13,7 +25,7 @@ export const CryptoNode = memo(({ data }) => {
     }
   };
 
-  const getRiskIcon = (risk) => {
+  const getRiskIcon = (risk: string) => {
     switch (risk) {
       case 'high': return <AlertTriangle className="h-4 w-4 text-red-500" />;
       case 'medium': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;

@@ -3,7 +3,18 @@ import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Package, ExternalLink } from 'lucide-react';
 
-export const LibraryNode = memo(({ data }) => {
+interface LibraryNodeData {
+  name: string;
+  version: string;
+  license: string;
+  hasVulnerabilities?: boolean;
+}
+
+interface LibraryNodeProps {
+  data: LibraryNodeData;
+}
+
+export const LibraryNode = memo(({ data }: LibraryNodeProps) => {
   return (
     <div className="px-4 py-3 shadow-md rounded-lg border-2 border-purple-500 bg-purple-50 min-w-[150px]">
       <Handle type="target" position={Position.Top} className="w-2 h-2" />

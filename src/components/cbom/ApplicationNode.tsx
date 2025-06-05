@@ -3,7 +3,17 @@ import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Zap } from 'lucide-react';
 
-export const ApplicationNode = memo(({ data }) => {
+interface ApplicationNodeData {
+  label: string;
+  version: string;
+  risk: string;
+}
+
+interface ApplicationNodeProps {
+  data: ApplicationNodeData;
+}
+
+export const ApplicationNode = memo(({ data }: ApplicationNodeProps) => {
   return (
     <div className="px-6 py-4 shadow-lg rounded-lg border-2 border-blue-500 bg-blue-50 min-w-[200px]">
       <Handle type="target" position={Position.Top} className="w-3 h-3" />
