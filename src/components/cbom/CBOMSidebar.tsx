@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,9 @@ import {
   ExternalLink,
   Key,
   Clock,
-  Zap
+  Zap,
+  FileCode,
+  Code
 } from 'lucide-react';
 
 interface CBOMSidebarProps {
@@ -117,57 +118,115 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
   const renderNodeDetails = () => {
     if (selectedNode.type === 'crypto' || selectedNode.name) {
       return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              {selectedNode.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-500">Type</div>
-                <div className="font-medium">{selectedNode.type}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-500">Key Size</div>
-                <div className="font-medium">{selectedNode.keySize}</div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="text-sm text-gray-500 mb-2">Risk Level</div>
-              <Badge 
-                variant={
-                  selectedNode.riskLevel === 'high' ? 'destructive' :
-                  selectedNode.riskLevel === 'medium' ? 'secondary' : 'outline'
-                }
-              >
-                {selectedNode.riskLevel}
-              </Badge>
-            </div>
-
-            {selectedNode.deprecated && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-red-700">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span className="font-medium">Deprecated Algorithm</span>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                {selectedNode.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-gray-500">Type</div>
+                  <div className="font-medium">{selectedNode.type}</div>
                 </div>
-                <p className="text-sm text-red-600 mt-1">
-                  This algorithm is deprecated and should be replaced with a modern alternative.
-                </p>
+                <div>
+                  <div className="text-sm text-gray-500">Key Size</div>
+                  <div className="font-medium">{selectedNode.keySize}</div>
+                </div>
               </div>
-            )}
-
-            <div>
-              <div className="text-sm text-gray-500 mb-2">Purpose</div>
-              <p className="text-sm">{selectedNode.purpose}</p>
-            </div>
-
-            {selectedNode.recommendations && (
+              
               <div>
-                <div className="text-sm text-gray-500 mb-2">Recommendations</div>
+                <div className="text-sm text-gray-500 mb-2">Risk Level</div>
+                <Badge 
+                  variant={
+                    selectedNode.riskLevel === 'high' ? 'destructive' :
+                    selectedNode.riskLevel === 'medium' ? 'secondary' : 'outline'
+                  }
+                >
+                  {selectedNode.riskLevel}
+                </Badge>
+              </div>
+
+              {selectedNode.deprecated && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">Deprecated Algorithm</span>
+                  </div>
+                  <p className="text-sm text-red-600 mt-1">
+                    This algorithm is deprecated and should be replaced with a modern alternative.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <div className="text-sm text-gray-500 mb-2">Purpose</div>
+                <p className="text-sm">{selectedNode.purpose}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Code Usage Locations */}
+          {selectedNode.usageLocations && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCode className="h-5 w-5" />
+                  Code Usage
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedNode.usageLocations.map((location, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Code className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-sm">{location.file}</span>
+                      <span className="text-xs text-gray-500">Line {location.line}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 mb-1">
+                      Function: <span className="font-mono">{location.function}</span>
+                    </div>
+                    <div className="bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">
+                      {location.usage}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Library Functions */}
+          {selectedNode.functions && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Library Functions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedNode.functions.map((func, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-3">
+                    <div className="font-medium text-sm">{func.name}</div>
+                    <div className="text-xs text-gray-600 mb-1">{func.purpose}</div>
+                    <div className="text-xs text-gray-500">
+                      Used in: {func.usedIn.join(', ')}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedNode.recommendations && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Recommendations</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ul className="text-sm space-y-1">
                   {selectedNode.recommendations.map((rec, index) => (
                     <li key={index} className="flex items-start gap-2">
@@ -176,10 +235,10 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       );
     }
 
