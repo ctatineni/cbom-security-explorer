@@ -42,25 +42,25 @@ const CBOMViewer = () => {
   const [services, setServices] = useState([]);
   const [dataSources] = useState([
     {
-      type: 'multiple',
+      type: 'multiple' as const,
       format: 'Combined CBOM Report',
       lastUpdated: '2 hours ago',
       serviceCount: 156,
-      status: 'active'
+      status: 'active' as const
     },
     {
-      type: 'single',
+      type: 'single' as const,
       format: 'Per-Service Reports',
       lastUpdated: '1 day ago',
       serviceCount: 89,
-      status: 'active'
+      status: 'active' as const
     },
     {
-      type: 'github',
+      type: 'github' as const,
       format: 'GitHub Scan Results',
       lastUpdated: '3 days ago',
       serviceCount: 234,
-      status: 'processing'
+      status: 'processing' as const
     }
   ]);
   const [selectedDataSource, setSelectedDataSource] = useState(dataSources[0]);
