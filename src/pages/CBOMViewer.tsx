@@ -10,6 +10,8 @@ import { CBOMHeader } from '@/components/cbom/CBOMHeader';
 import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
 import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
 import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
+import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
+import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { mockCBOMData } from '@/data/mockCBOMData';
 import { useToast } from '@/components/ui/use-toast';
 
