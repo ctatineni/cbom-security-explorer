@@ -13,7 +13,7 @@ import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
 import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { mockCBOMData } from '@/data/mockCBOMData';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataSource {
   type: 'single' | 'multiple' | 'github';
@@ -28,9 +28,13 @@ const generateMockServices = (count: number) => {
   const services = [];
   const riskLevels = ['low', 'medium', 'high'];
   const serviceTypes = ['Auth', 'Payment', 'Data', 'API', 'Cache', 'Storage', 'Analytics', 'Notification'];
+  const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
   
   for (let i = 0; i < count; i++) {
     const type = serviceTypes[i % serviceTypes.length];
+    const language = languages[Math.floor(Math.random() * languages.length)];
+    const pqcCompatible = Math.random() > 0.4; // 60% are PQC compatible
+    
     services.push({
       id: `service-${i + 1}`,
       name: `${type} Service ${Math.floor(i / serviceTypes.length) + 1}`,
@@ -39,6 +43,9 @@ const generateMockServices = (count: number) => {
       riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
       cryptoAlgorithms: mockCBOMData.cryptoAlgorithms.slice(0, Math.floor(Math.random() * 3) + 1).map(a => a.id),
       libraries: mockCBOMData.libraries.slice(0, Math.floor(Math.random() * 2) + 1).map(l => l.id),
+      programmingLanguage: language,
+      languageVersion: language === 'Java' ? '11' : language === 'Python' ? '3.9' : '14.0',
+      pqcCompatible,
     });
   }
   return services;
@@ -50,6 +57,7 @@ const CBOMViewer = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState([]);
+  const [showServiceDetails, setShowServiceDetails] = useState(false);
   
   const [dataSources] = useState<DataSource[]>([
     {
@@ -120,6 +128,11 @@ const CBOMViewer = () => {
   const handleServiceSelect = (service) => {
     setSelectedService(service);
     setSelectedNode(null);
+  };
+
+  const handleServiceDetails = (service) => {
+    setSelectedService(service);
+    setShowServiceDetails(true);
   };
 
   const getFilteredCBOMData = () => {
@@ -264,6 +277,7 @@ const CBOMViewer = () => {
                       services={services}
                       selectedService={selectedService}
                       onServiceSelect={handleServiceSelect}
+                      onServiceDetails={handleServiceDetails}
                     />
                   </CardContent>
                 </Card>
@@ -308,6 +322,15 @@ const CBOMViewer = () => {
               </p>
             </CardContent>
           </Card>
+        )}
+
+        {/* Service Details Modal */}
+        {selectedService && (
+          <ServiceDetailsModal
+            service={selectedService}
+            isOpen={showServiceDetails}
+            onClose={() => setShowServiceDetails(false)}
+          />
         )}
       </div>
     </div>
