@@ -328,7 +328,7 @@ const CBOMViewer = () => {
         {selectedService && (
           <ServiceDetailsModal
             service={selectedService}
-            isOpen={showServiceDetails}
+            open={showServiceDetails}
             onClose={() => setShowServiceDetails(false)}
           />
         )}
