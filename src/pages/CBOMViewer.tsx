@@ -13,6 +13,7 @@ import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
 import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { mockCBOMData } from '@/data/mockCBOMData';
 import { useToast } from '@/hooks/use-toast';
+import { MetricsDashboard } from '@/components/cbom/MetricsDashboard';
 
 interface DataSource {
   type: 'single' | 'multiple' | 'github';
@@ -177,6 +178,9 @@ const CBOMViewer = () => {
         {/* Main Content */}
         {cbomData && (
           <div className="space-y-6">
+            {/* High-level Metrics Dashboard */}
+            <MetricsDashboard services={services} cbomData={cbomData} />
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="services" className="relative">
