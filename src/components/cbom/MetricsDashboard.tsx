@@ -32,19 +32,21 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({
     
     const uniqueAlgorithms = new Set();
     const uniqueLibraries = new Set();
-    const languageDistribution = {};
+    const languageDistribution: Record<string, number> = {};
     
     services.forEach(service => {
-      service.cryptoAlgorithms?.forEach(algo => uniqueAlgorithms.add(algo));
-      service.libraries?.forEach(lib => uniqueLibraries.add(lib));
+      service.cryptoAlgorithms?.forEach((algo: string) => uniqueAlgorithms.add(algo));
+      service.libraries?.forEach((lib: string) => uniqueLibraries.add(lib));
       
       const lang = service.programmingLanguage;
-      languageDistribution[lang] = (languageDistribution[lang] || 0) + 1;
+      if (lang) {
+        languageDistribution[lang] = (languageDistribution[lang] || 0) + 1;
+      }
     });
 
-    const riskScore = Math.round(
+    const riskScore = totalServices > 0 ? Math.round(
       ((lowRiskServices * 100) + (mediumRiskServices * 50) + (highRiskServices * 0)) / totalServices
-    );
+    ) : 0;
 
     return {
       totalServices,
@@ -57,13 +59,13 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({
       uniqueLibraries: uniqueLibraries.size,
       riskScore,
       languageDistribution,
-      pqcReadinessPercent: Math.round((pqcReadyServices / totalServices) * 100)
+      pqcReadinessPercent: totalServices > 0 ? Math.round((pqcReadyServices / totalServices) * 100) : 0
     };
   };
 
   const metrics = getMetrics();
   const topLanguages = Object.entries(metrics.languageDistribution)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 3);
 
   return (
@@ -221,7 +223,7 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({
                     }`}></div>
                     <span className="text-sm">{language}</span>
                   </div>
-                  <Badge variant="outline">{count}</Badge>
+                  <Badge variant="outline">{count as number}</Badge>
                 </div>
               ))}
             </div>
