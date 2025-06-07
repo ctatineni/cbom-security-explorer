@@ -131,6 +131,11 @@ const CBOMViewer = () => {
     setActiveTab('overview'); // Automatically switch to overview when service is selected
   };
 
+  const handleServiceDetails = (service) => {
+    setSelectedService(service);
+    setShowServiceDetails(true);
+  };
+
   const getFilteredCBOMData = () => {
     if (!selectedService || !cbomData) return cbomData;
     
