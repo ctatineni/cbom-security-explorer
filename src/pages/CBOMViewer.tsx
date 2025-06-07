@@ -2,31 +2,103 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Shield, AlertTriangle, CheckCircle, Layers } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Layers, Clock } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { CBOMHeader } from '@/components/cbom/CBOMHeader';
+import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
+import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
+import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { mockCBOMData } from '@/data/mockCBOMData';
+import { useToast } from '@/components/ui/use-toast';
+
+// Generate mock data for hundreds of services
+const generateMockServices = (count: number) => {
+  const services = [];
+  const riskLevels = ['low', 'medium', 'high'];
+  const serviceTypes = ['Auth', 'Payment', 'Data', 'API', 'Cache', 'Storage', 'Analytics', 'Notification'];
+  
+  for (let i = 0; i < count; i++) {
+    const type = serviceTypes[i % serviceTypes.length];
+    services.push({
+      id: `service-${i + 1}`,
+      name: `${type} Service ${Math.floor(i / serviceTypes.length) + 1}`,
+      version: `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
+      description: `Handles ${type.toLowerCase()} operations for the application`,
+      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+      cryptoAlgorithms: mockCBOMData.cryptoAlgorithms.slice(0, Math.floor(Math.random() * 3) + 1).map(a => a.id),
+      libraries: mockCBOMData.libraries.slice(0, Math.floor(Math.random() * 2) + 1).map(l => l.id),
+    });
+  }
+  return services;
+};
 
 const CBOMViewer = () => {
-  const [applicationId, setApplicationId] = useState('');
   const [cbomData, setCbomData] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [services, setServices] = useState([]);
+  const [dataSources] = useState([
+    {
+      type: 'multiple',
+      format: 'Combined CBOM Report',
+      lastUpdated: '2 hours ago',
+      serviceCount: 156,
+      status: 'active'
+    },
+    {
+      type: 'single',
+      format: 'Per-Service Reports',
+      lastUpdated: '1 day ago',
+      serviceCount: 89,
+      status: 'active'
+    },
+    {
+      type: 'github',
+      format: 'GitHub Scan Results',
+      lastUpdated: '3 days ago',
+      serviceCount: 234,
+      status: 'processing'
+    }
+  ]);
+  const [selectedDataSource, setSelectedDataSource] = useState(dataSources[0]);
+  const { toast } = useToast();
 
-  const handleSearch = async () => {
-    if (!applicationId.trim()) return;
-    
+  const handleNaturalLanguageSearch = async (query: string) => {
     setLoading(true);
-    // Simulate API call
+    
+    // Simulate AI processing
     setTimeout(() => {
-      setCbomData(mockCBOMData);
-      setSelectedService(null); // Reset service selection
+      // Generate mock services based on the query
+      const serviceCount = Math.floor(Math.random() * 200) + 50;
+      const mockServices = generateMockServices(serviceCount);
+      
+      setCbomData({
+        ...mockCBOMData,
+        services: mockServices
+      });
+      setServices(mockServices);
+      setSelectedService(null);
       setLoading(false);
-    }, 1000);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found ${serviceCount} services matching your query.`,
+      });
+    }, 2000);
+  };
+
+  const handleGitHubScan = async (url: string) => {
+    toast({
+      title: "GitHub Scan Initiated",
+      description: "Your repository is being analyzed. Results will be available in approximately 30 minutes.",
+      duration: 5000,
+    });
+    
+    // Here you would normally make an API call to start the GitHub scanning process
+    console.log('Starting GitHub scan for:', url);
   };
 
   const handleNodeSelect = (nodeData) => {
@@ -35,13 +107,12 @@ const CBOMViewer = () => {
 
   const handleServiceSelect = (service) => {
     setSelectedService(service);
-    setSelectedNode(null); // Reset node selection when switching services
+    setSelectedNode(null);
   };
 
   const getFilteredCBOMData = () => {
     if (!selectedService || !cbomData) return cbomData;
     
-    // Filter data based on selected service
     const serviceCryptoAlgorithms = cbomData.cryptoAlgorithms.filter(algo => 
       selectedService.cryptoAlgorithms.includes(algo.id)
     );
@@ -68,142 +139,132 @@ const CBOMViewer = () => {
       <CBOMHeader />
       
       <div className="container mx-auto p-6">
-        {/* Search Interface */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Cryptographic Bill of Materials Viewer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Input
-                placeholder="Enter Application ID (e.g., app-crypto-001)"
-                value={applicationId}
-                onChange={(e) => setApplicationId(e.target.value)}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleSearch}
-                disabled={loading || !applicationId.trim()}
-                className="flex items-center gap-2"
-              >
-                <Search className="h-4 w-4" />
-                {loading ? 'Analyzing...' : 'Generate CBOM'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* AI Search Interface */}
+        <div className="mb-6">
+          <NaturalLanguageSearch
+            onSearch={handleNaturalLanguageSearch}
+            onGitHubScan={handleGitHubScan}
+            loading={loading}
+          />
+        </div>
 
         {/* Main Content */}
         {cbomData && (
           <div className="space-y-6">
-            {/* Services Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  Application Services
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {cbomData.services.map((service) => (
-                    <Card 
-                      key={service.id}
-                      className={`cursor-pointer transition-colors ${
-                        selectedService?.id === service.id 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => handleServiceSelect(service)}
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">{service.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-600">
-                            Version: {service.version}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {service.description}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              service.riskLevel === 'high' ? 'bg-red-500' :
-                              service.riskLevel === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}></div>
-                            <span className="text-xs capitalize">{service.riskLevel} Risk</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                
-                <div className="mt-4 flex gap-2">
-                  <Button 
-                    variant={!selectedService ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedService(null)}
-                  >
-                    All Services
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Graph Visualization */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-400px)]">
-              <div className="lg:col-span-3">
-                <Card className="h-full">
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="services">Services ({services.length})</TabsTrigger>
+                <TabsTrigger value="data-sources">Data Sources</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6">
+                {/* Metrics Overview */}
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>
-                        Cryptographic Dependencies
-                        {selectedService && (
-                          <span className="text-sm font-normal text-gray-600 ml-2">
-                            - {selectedService.name}
-                          </span>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span>{cbomData.metrics.secure}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                          <span>{cbomData.metrics.warnings}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                          <span>{cbomData.metrics.critical}</span>
-                        </div>
-                      </div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Security Overview
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[calc(100%-80px)]">
-                    <CBOMGraph 
-                      data={getFilteredCBOMData()}
-                      onNodeSelect={handleNodeSelect}
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{services.length}</div>
+                        <div className="text-sm text-gray-500">Total Services</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{cbomData.metrics.secure}</div>
+                        <div className="text-sm text-gray-500">Secure</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">{cbomData.metrics.warnings}</div>
+                        <div className="text-sm text-gray-500">Warnings</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">{cbomData.metrics.critical}</div>
+                        <div className="text-sm text-gray-500">Critical</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Graph Visualization */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-500px)]">
+                  <div className="lg:col-span-3">
+                    <Card className="h-full">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>
+                            Cryptographic Dependencies
+                            {selectedService && (
+                              <span className="text-sm font-normal text-gray-600 ml-2">
+                                - {selectedService.name}
+                              </span>
+                            )}
+                          </span>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span>{cbomData.metrics.secure}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                              <span>{cbomData.metrics.warnings}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <span>{cbomData.metrics.critical}</span>
+                            </div>
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-[calc(100%-80px)]">
+                        <CBOMGraph 
+                          data={getFilteredCBOMData()}
+                          onNodeSelect={handleNodeSelect}
+                          selectedNode={selectedNode}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="lg:col-span-1">
+                    <CBOMSidebar 
                       selectedNode={selectedNode}
+                      cbomData={getFilteredCBOMData()}
+                      onNodeSelect={handleNodeSelect}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="services" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Layers className="h-5 w-5" />
+                      Application Services
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <VirtualizedServicesGrid
+                      services={services}
+                      selectedService={selectedService}
+                      onServiceSelect={handleServiceSelect}
                     />
                   </CardContent>
                 </Card>
-              </div>
+              </TabsContent>
 
-              {/* Details Sidebar */}
-              <div className="lg:col-span-1">
-                <CBOMSidebar 
-                  selectedNode={selectedNode}
-                  cbomData={getFilteredCBOMData()}
-                  onNodeSelect={handleNodeSelect}
+              <TabsContent value="data-sources" className="space-y-6">
+                <DataFormatHandler
+                  dataSources={dataSources}
+                  selectedSource={selectedDataSource}
+                  onSourceSelect={setSelectedDataSource}
                 />
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
@@ -213,10 +274,25 @@ const CBOMViewer = () => {
             <CardContent>
               <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                No CBOM Data Available
+                Ready for AI-Powered Analysis
               </h3>
               <p className="text-gray-500">
-                Enter an application ID to generate a cryptographic bill of materials
+                Ask a natural language question about your cryptographic dependencies or scan a GitHub repository
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Clock className="h-16 w-16 text-blue-500 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                Analyzing Dependencies
+              </h3>
+              <p className="text-gray-500">
+                AI is processing your request and analyzing cryptographic patterns...
               </p>
             </CardContent>
           </Card>
