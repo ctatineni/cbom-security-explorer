@@ -13,6 +13,14 @@ import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { mockCBOMData } from '@/data/mockCBOMData';
 import { useToast } from '@/components/ui/use-toast';
 
+interface DataSource {
+  type: 'single' | 'multiple' | 'github';
+  format: string;
+  lastUpdated: string;
+  serviceCount: number;
+  status: 'active' | 'processing' | 'error';
+}
+
 // Generate mock data for hundreds of services
 const generateMockServices = (count: number) => {
   const services = [];
@@ -40,7 +48,8 @@ const CBOMViewer = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState([]);
-  const [dataSources] = useState([
+  
+  const [dataSources] = useState<DataSource[]>([
     {
       type: 'multiple' as const,
       format: 'Combined CBOM Report',
@@ -63,7 +72,8 @@ const CBOMViewer = () => {
       status: 'processing' as const
     }
   ]);
-  const [selectedDataSource, setSelectedDataSource] = useState(dataSources[0]);
+  
+  const [selectedDataSource, setSelectedDataSource] = useState<DataSource>(dataSources[0]);
   const { toast } = useToast();
 
   const handleNaturalLanguageSearch = async (query: string) => {
