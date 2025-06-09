@@ -14,40 +14,7 @@ import {
   Key,
   XCircle
 } from 'lucide-react';
-
-interface Service {
-  id: string;
-  name: string;
-  riskLevel: 'low' | 'medium' | 'high';
-  cryptoAlgorithms: string[];
-  libraries: string[];
-  programmingLanguage?: string;
-  pqcCompatible?: boolean;
-}
-
-interface CBOMData {
-  applications?: Array<{
-    id: string;
-    name: string;
-    services: Service[];
-  }>;
-  cryptoAlgorithms: Array<{
-    id: string;
-    name: string;
-    riskLevel: 'low' | 'medium' | 'high';
-    deprecated: boolean;
-  }>;
-  libraries: Array<{
-    id: string;
-    name: string;
-    hasVulnerabilities: boolean;
-  }>;
-  metrics: {
-    secure: number;
-    warnings: number;
-    critical: number;
-  };
-}
+import { Service, CBOMData } from '@/data/mockCBOMData';
 
 interface MetricsDashboardProps {
   services: Service[];
@@ -85,13 +52,13 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({ services, cb
     const uniqueLibraries = new Set();
     
     services.forEach(service => {
-      service.cryptoAlgorithms.forEach(algo => uniqueCryptoAlgorithms.add(algo));
-      service.libraries.forEach(lib => uniqueLibraries.add(lib));
+      service.cryptoAlgorithms.forEach(algo => uniqueCryptoAlgorithms.add(algo.id));
+      service.libraries.forEach(lib => uniqueLibraries.add(lib.id));
     });
     
     // Critical issues
-    const deprecatedAlgorithms = cbomData.cryptoAlgorithms.filter(algo => algo.deprecated).length;
-    const vulnerableLibraries = cbomData.libraries.filter(lib => lib.hasVulnerabilities).length;
+    const deprecatedAlgorithms = cbomData.cryptoAlgorithms?.filter(algo => algo.deprecated).length || 0;
+    const vulnerableLibraries = cbomData.libraries?.filter(lib => lib.hasVulnerabilities).length || 0;
     
     return {
       totalServices,

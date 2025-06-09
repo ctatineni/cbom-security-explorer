@@ -25,18 +25,6 @@ interface DataSource {
   status: 'active' | 'processing' | 'error';
 }
 
-// Create a compatible CBOMData structure for the graph component
-interface GraphCBOMData {
-  applications: Application[];
-  cryptoAlgorithms: any[];
-  libraries: any[];
-  metrics: {
-    secure: number;
-    warnings: number;
-    critical: number;
-  };
-}
-
 const CBOMViewer = () => {
   const [cbomData, setCbomData] = useState<CBOMData | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -121,7 +109,7 @@ const CBOMViewer = () => {
     setShowServiceDetails(true);
   };
 
-  const getFilteredCBOMData = (): GraphCBOMData | null => {
+  const getFilteredCBOMData = (): CBOMData | null => {
     if (!selectedService || !cbomData) return null;
     
     // Create a compatible structure for the graph component
