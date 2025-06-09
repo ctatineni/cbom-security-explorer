@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,18 @@ interface DataSource {
   lastUpdated: string;
   serviceCount: number;
   status: 'active' | 'processing' | 'error';
+}
+
+// Create a compatible CBOMData structure for the graph component
+interface GraphCBOMData {
+  applications: Application[];
+  cryptoAlgorithms: any[];
+  libraries: any[];
+  metrics: {
+    secure: number;
+    warnings: number;
+    critical: number;
+  };
 }
 
 const CBOMViewer = () => {
@@ -108,14 +121,15 @@ const CBOMViewer = () => {
     setShowServiceDetails(true);
   };
 
-  const getFilteredCBOMData = () => {
-    if (!selectedService || !cbomData) return cbomData;
+  const getFilteredCBOMData = (): GraphCBOMData | null => {
+    if (!selectedService || !cbomData) return null;
     
-    // For the new structure, the service already contains its own crypto algorithms and libraries
+    // Create a compatible structure for the graph component
     return {
-      ...cbomData,
+      applications: cbomData.applications,
       cryptoAlgorithms: selectedService.cryptoAlgorithms,
       libraries: selectedService.libraries,
+      metrics: cbomData.metrics
     };
   };
 
@@ -405,11 +419,13 @@ const CBOMViewer = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="h-[calc(100%-80px)]">
-                            <CBOMGraph 
-                              data={getFilteredCBOMData()}
-                              onNodeSelect={handleNodeSelect}
-                              selectedNode={selectedNode}
-                            />
+                            {getFilteredCBOMData() && (
+                              <CBOMGraph 
+                                data={getFilteredCBOMData()}
+                                onNodeSelect={handleNodeSelect}
+                                selectedNode={selectedNode}
+                              />
+                            )}
                           </CardContent>
                         </Card>
                       </div>
