@@ -6,19 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Filter, Code, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-interface Service {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  riskLevel: 'low' | 'medium' | 'high';
-  cryptoAlgorithms: string[];
-  libraries: string[];
-  programmingLanguage?: string;
-  languageVersion?: string;
-  pqcCompatible?: boolean;
-}
+import { Service } from '@/data/mockCBOMData';
 
 interface VirtualizedServicesGridProps {
   services: Service[];

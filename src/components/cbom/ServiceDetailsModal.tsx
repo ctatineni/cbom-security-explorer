@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -23,19 +24,7 @@ import {
   Lightbulb,
   XCircle
 } from 'lucide-react';
-
-interface Service {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  riskLevel: 'low' | 'medium' | 'high';
-  cryptoAlgorithms: string[];
-  libraries: string[];
-  programmingLanguage?: string;
-  languageVersion?: string;
-  pqcCompatible?: boolean;
-}
+import { Service } from '@/data/mockCBOMData';
 
 interface MigrationStep {
   id: string;
@@ -91,8 +80,12 @@ export const ServiceDetailsModal: React.FC<ServiceDetailsModalProps> = ({
   const getAntiPatterns = (): AntiPattern[] => {
     const patterns: AntiPattern[] = [];
     
-    // Check for hardcoded algorithms
-    if (service.cryptoAlgorithms.includes('MD5') || service.cryptoAlgorithms.includes('SHA1')) {
+    // Check for weak algorithms
+    const weakAlgorithms = service.cryptoAlgorithms.filter(algo => 
+      algo.name === 'MD5' || algo.name === 'SHA1' || algo.deprecated
+    );
+    
+    if (weakAlgorithms.length > 0) {
       patterns.push({
         id: '1',
         type: 'weak-encryption',
@@ -104,7 +97,7 @@ export const ServiceDetailsModal: React.FC<ServiceDetailsModalProps> = ({
           line: 45,
           function: 'hashPassword'
         },
-        codeSnippet: 'const hash = crypto.createHash(\'md5\').update(password).digest(\'hex\');',
+        codeSnippet: `const hash = crypto.createHash('${weakAlgorithms[0].name.toLowerCase()}').update(password).digest('hex');`,
         recommendation: 'Replace MD5/SHA1 with SHA-256 or better. Use bcrypt for password hashing.',
         fixExample: 'const hash = await bcrypt.hash(password, 12);'
       });
@@ -290,8 +283,12 @@ export const ServiceDetailsModal: React.FC<ServiceDetailsModalProps> = ({
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {service.cryptoAlgorithms.map((algo) => (
-                      <Badge key={algo} variant="outline" className="text-xs">
-                        {algo}
+                      <Badge 
+                        key={algo.id} 
+                        variant={algo.deprecated ? "destructive" : "outline"} 
+                        className="text-xs"
+                      >
+                        {algo.name}
                       </Badge>
                     ))}
                   </div>
@@ -305,8 +302,12 @@ export const ServiceDetailsModal: React.FC<ServiceDetailsModalProps> = ({
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {service.libraries.map((lib) => (
-                      <Badge key={lib} variant="secondary" className="text-xs">
-                        {lib}
+                      <Badge 
+                        key={lib.id} 
+                        variant={lib.hasVulnerabilities ? "destructive" : "secondary"} 
+                        className="text-xs"
+                      >
+                        {lib.name}
                       </Badge>
                     ))}
                   </div>
@@ -325,10 +326,10 @@ export const ServiceDetailsModal: React.FC<ServiceDetailsModalProps> = ({
                   <h4 className="font-medium text-sm">Cryptographic Vulnerabilities</h4>
                   <div className="space-y-2">
                     {service.cryptoAlgorithms.map((algo) => (
-                      <div key={algo} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">{algo}</span>
-                        <Badge variant={algo.includes('MD5') || algo.includes('SHA1') ? 'destructive' : 'outline'}>
-                          {algo.includes('MD5') || algo.includes('SHA1') ? 'Deprecated' : 'Secure'}
+                      <div key={algo.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">{algo.name}</span>
+                        <Badge variant={algo.deprecated ? 'destructive' : 'outline'}>
+                          {algo.deprecated ? 'Deprecated' : 'Secure'}
                         </Badge>
                       </div>
                     ))}
