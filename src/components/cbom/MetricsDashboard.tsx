@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +46,7 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({ services, cb
       .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5);
     
-    // Unique crypto algorithms and libraries
+    // Unique crypto algorithms and libraries from services
     const uniqueCryptoAlgorithms = new Set();
     const uniqueLibraries = new Set();
     
@@ -56,9 +55,14 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({ services, cb
       service.libraries.forEach(lib => uniqueLibraries.add(lib.id));
     });
     
-    // Critical issues
-    const deprecatedAlgorithms = cbomData.cryptoAlgorithms?.filter(algo => algo.deprecated).length || 0;
-    const vulnerableLibraries = cbomData.libraries?.filter(lib => lib.hasVulnerabilities).length || 0;
+    // Critical issues - get from all services' algorithms and libraries
+    let deprecatedAlgorithms = 0;
+    let vulnerableLibraries = 0;
+    
+    services.forEach(service => {
+      deprecatedAlgorithms += service.cryptoAlgorithms.filter(algo => algo.deprecated).length;
+      vulnerableLibraries += service.libraries.filter(lib => lib.hasVulnerabilities).length;
+    });
     
     return {
       totalServices,

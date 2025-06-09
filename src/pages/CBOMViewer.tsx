@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -109,7 +108,7 @@ const CBOMViewer = () => {
     setShowServiceDetails(true);
   };
 
-  const getFilteredCBOMData = (): CBOMData | null => {
+  const getFilteredCBOMData = (): any => {
     if (!selectedService || !cbomData) return null;
     
     // Create a compatible structure for the graph component
