@@ -109,11 +109,15 @@ const CBOMViewer = () => {
   };
 
   const getFilteredCBOMData = (): any => {
-    if (!selectedService || !cbomData) return null;
+    if (!selectedService || !cbomData || !selectedApplication) return null;
     
     // Create a compatible structure for the graph component
     return {
-      applications: cbomData.applications,
+      application: {
+        name: selectedService.name,
+        version: selectedService.version || '1.0.0',
+        riskLevel: selectedService.riskLevel
+      },
       cryptoAlgorithms: selectedService.cryptoAlgorithms,
       libraries: selectedService.libraries,
       metrics: cbomData.metrics
