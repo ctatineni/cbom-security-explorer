@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -112,18 +111,11 @@ const CBOMViewer = () => {
   const getFilteredCBOMData = () => {
     if (!selectedService || !cbomData) return cbomData;
     
-    const serviceCryptoAlgorithms = cbomData.cryptoAlgorithms.filter(algo => 
-      selectedService.cryptoAlgorithms.includes(algo.id)
-    );
-    
-    const serviceLibraries = cbomData.libraries.filter(lib => 
-      selectedService.libraries.includes(lib.id)
-    );
-
+    // For the new structure, the service already contains its own crypto algorithms and libraries
     return {
       ...cbomData,
-      cryptoAlgorithms: serviceCryptoAlgorithms,
-      libraries: serviceLibraries,
+      cryptoAlgorithms: selectedService.cryptoAlgorithms,
+      libraries: selectedService.libraries,
     };
   };
 
@@ -361,11 +353,11 @@ const CBOMViewer = () => {
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">{getFilteredCBOMData()?.cryptoAlgorithms?.length || 0}</div>
+                            <div className="text-2xl font-bold text-blue-600">{selectedService.cryptoAlgorithms?.length || 0}</div>
                             <div className="text-sm text-gray-500">Crypto Algorithms</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600">{getFilteredCBOMData()?.libraries?.length || 0}</div>
+                            <div className="text-2xl font-bold text-purple-600">{selectedService.libraries?.length || 0}</div>
                             <div className="text-sm text-gray-500">Libraries</div>
                           </div>
                           <div className="text-center">

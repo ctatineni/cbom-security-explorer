@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,10 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
   onNodeSelect 
 }) => {
   if (!selectedNode) {
+    // Calculate metrics from the service data
+    const totalCryptoAlgorithms = cbomData?.cryptoAlgorithms?.length || 0;
+    const totalLibraries = cbomData?.libraries?.length || 0;
+    
     return (
       <div className="space-y-4">
         <Card>
@@ -37,13 +42,13 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {cbomData?.cryptoAlgorithms?.length || 0}
+                  {totalCryptoAlgorithms}
                 </div>
                 <div className="text-sm text-gray-500">Algorithms</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {cbomData?.libraries?.length || 0}
+                  {totalLibraries}
                 </div>
                 <div className="text-sm text-gray-500">Libraries</div>
               </div>
@@ -95,7 +100,7 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
               onClick={() => onNodeSelect(cbomData?.application)}
             >
               <Zap className="h-4 w-4 mr-2" />
-              Application Details
+              Service Details
             </Button>
             {cbomData?.cryptoAlgorithms?.slice(0, 3).map((algo) => (
               <Button 
