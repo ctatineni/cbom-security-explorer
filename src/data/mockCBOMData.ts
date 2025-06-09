@@ -1,48 +1,128 @@
+export interface Application {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  lastAnalyzed: string;
+  services: Service[];
+}
 
-export const mockCBOMData = {
-  application: {
-    name: "SecureApp v2.1",
-    version: "2.1.0",
-    riskLevel: "medium",
-    lastAnalyzed: "2024-01-15",
-  },
+export interface Service {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  cryptoAlgorithms: string[];
+  libraries: string[];
+  programmingLanguage?: string;
+  languageVersion?: string;
+  pqcCompatible?: boolean;
+  applicationId: string;
+}
+
+export interface CryptoAlgorithm {
+  id: string;
+  name: string;
+  type: string;
+  keySize: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  deprecated: boolean;
+  purpose: string;
+  usageLocations: Array<{
+    file: string;
+    line: number;
+    function: string;
+    usage: string;
+  }>;
+  recommendations: string[];
+}
+
+export interface Library {
+  id: string;
+  name: string;
+  version: string;
+  license: string;
+  hasVulnerabilities: boolean;
+  algorithms: string[];
+  lastUpdated: string;
+  usageLocations: Array<{
+    file: string;
+    line: number;
+    context: string;
+  }>;
+  functions: Array<{
+    name: string;
+    usedIn: string[];
+    purpose: string;
+  }>;
+}
+
+export interface CBOMData {
+  applications: Application[];
+  cryptoAlgorithms: CryptoAlgorithm[];
+  libraries: Library[];
+  metrics: {
+    secure: number;
+    warnings: number;
+    critical: number;
+  };
+}
+
+// Generate mock applications with services
+const generateMockApplications = (): Application[] => {
+  const applications: Application[] = [];
+  const appNames = ['E-Commerce Platform', 'Banking System', 'Healthcare Portal', 'IoT Management'];
+  const riskLevels = ['low', 'medium', 'high'] as const;
   
-  services: [
-    {
-      id: "auth-service",
-      name: "Authentication Service",
-      version: "1.3.0",
-      description: "Handles user authentication and authorization",
-      riskLevel: "low",
-      cryptoAlgorithms: ["aes-256", "rsa-2048", "sha-256"],
-      libraries: ["openssl", "bouncy-castle"]
-    },
-    {
-      id: "payment-service", 
-      name: "Payment Service",
-      version: "2.0.1",
-      description: "Processes payment transactions",
-      riskLevel: "high",
-      cryptoAlgorithms: ["aes-256", "rsa-2048", "des"],
-      libraries: ["openssl", "legacy-crypto"]
-    },
-    {
-      id: "data-service",
-      name: "Data Processing Service", 
-      version: "1.5.2",
-      description: "Handles data storage and retrieval",
-      riskLevel: "medium",
-      cryptoAlgorithms: ["aes-256", "sha-256", "md5"],
-      libraries: ["openssl", "bouncy-castle"]
+  appNames.forEach((appName, appIndex) => {
+    const serviceCount = Math.floor(Math.random() * 15) + 5; // 5-20 services per app
+    const services: Service[] = [];
+    
+    for (let i = 0; i < serviceCount; i++) {
+      const serviceTypes = ['Auth', 'Payment', 'Data', 'API', 'Cache', 'Storage', 'Analytics', 'Notification'];
+      const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
+      const type = serviceTypes[i % serviceTypes.length];
+      const language = languages[Math.floor(Math.random() * languages.length)];
+      const pqcCompatible = Math.random() > 0.4;
+      
+      services.push({
+        id: `app-${appIndex}-service-${i}`,
+        name: `${type} Service ${Math.floor(i / serviceTypes.length) + 1}`,
+        version: `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
+        description: `${appName} ${type.toLowerCase()} service handling critical operations`,
+        riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+        cryptoAlgorithms: ['aes-256', 'rsa-2048', 'sha-256'].slice(0, Math.floor(Math.random() * 3) + 1),
+        libraries: ['openssl', 'bouncy-castle'].slice(0, Math.floor(Math.random() * 2) + 1),
+        programmingLanguage: language,
+        languageVersion: language === 'Java' ? '11' : language === 'Python' ? '3.9' : '14.0',
+        pqcCompatible,
+        applicationId: `app-${appIndex}`
+      });
     }
-  ],
+    
+    applications.push({
+      id: `app-${appIndex}`,
+      name: appName,
+      version: `${Math.floor(Math.random() * 3) + 1}.0.0`,
+      description: `Enterprise ${appName.toLowerCase()} with comprehensive security features`,
+      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+      lastAnalyzed: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      services
+    });
+  });
   
+  return applications;
+};
+
+export const mockCBOMData: CBOMData = {
+  applications: generateMockApplications(),
   metrics: {
     secure: 8,
     warnings: 3,
     critical: 2,
   },
-
   cryptoAlgorithms: [
     {
       id: "aes-256",
@@ -168,7 +248,6 @@ export const mockCBOMData = {
       ]
     }
   ],
-
   libraries: [
     {
       id: "openssl",
@@ -253,17 +332,6 @@ export const mockCBOMData = {
           purpose: "Legacy encryption"
         }
       ]
-    }
-  ],
-
-  certificates: [
-    {
-      id: "ssl-cert-1",
-      name: "api.secureapp.com",
-      issuer: "DigiCert",
-      expiryDate: "2024-12-31",
-      keySize: "2048-bit",
-      algorithm: "RSA-SHA256"
     }
   ]
 };

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, Building } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { CBOMHeader } from '@/components/cbom/CBOMHeader';
@@ -11,7 +12,8 @@ import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGr
 import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
 import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
-import { mockCBOMData } from '@/data/mockCBOMData';
+import { ApplicationSelector } from '@/components/cbom/ApplicationSelector';
+import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMData';
 import { useToast } from '@/hooks/use-toast';
 import { MetricsDashboard } from '@/components/cbom/MetricsDashboard';
 
@@ -23,42 +25,14 @@ interface DataSource {
   status: 'active' | 'processing' | 'error';
 }
 
-// Generate mock data for hundreds of services
-const generateMockServices = (count: number) => {
-  const services = [];
-  const riskLevels = ['low', 'medium', 'high'];
-  const serviceTypes = ['Auth', 'Payment', 'Data', 'API', 'Cache', 'Storage', 'Analytics', 'Notification'];
-  const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
-  
-  for (let i = 0; i < count; i++) {
-    const type = serviceTypes[i % serviceTypes.length];
-    const language = languages[Math.floor(Math.random() * languages.length)];
-    const pqcCompatible = Math.random() > 0.4; // 60% are PQC compatible
-    
-    services.push({
-      id: `service-${i + 1}`,
-      name: `${type} Service ${Math.floor(i / serviceTypes.length) + 1}`,
-      version: `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
-      description: `Handles ${type.toLowerCase()} operations for the application`,
-      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
-      cryptoAlgorithms: mockCBOMData.cryptoAlgorithms.slice(0, Math.floor(Math.random() * 3) + 1).map(a => a.id),
-      libraries: mockCBOMData.libraries.slice(0, Math.floor(Math.random() * 2) + 1).map(l => l.id),
-      programmingLanguage: language,
-      languageVersion: language === 'Java' ? '11' : language === 'Python' ? '3.9' : '14.0',
-      pqcCompatible,
-    });
-  }
-  return services;
-};
-
 const CBOMViewer = () => {
-  const [cbomData, setCbomData] = useState(null);
+  const [cbomData, setCbomData] = useState<CBOMData | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(false);
-  const [services, setServices] = useState([]);
   const [showServiceDetails, setShowServiceDetails] = useState(false);
-  const [activeTab, setActiveTab] = useState('services'); // Start with services tab
+  const [activeTab, setActiveTab] = useState('applications');
   
   const [dataSources] = useState<DataSource[]>([
     {
@@ -90,23 +64,15 @@ const CBOMViewer = () => {
   const handleNaturalLanguageSearch = async (query: string) => {
     setLoading(true);
     
-    // Simulate AI processing
     setTimeout(() => {
-      // Generate mock services based on the query
-      const serviceCount = Math.floor(Math.random() * 200) + 50;
-      const mockServices = generateMockServices(serviceCount);
-      
-      setCbomData({
-        ...mockCBOMData,
-        services: mockServices
-      });
-      setServices(mockServices);
+      setCbomData(mockCBOMData);
+      setSelectedApplication(null);
       setSelectedService(null);
       setLoading(false);
       
       toast({
         title: "Analysis Complete",
-        description: `Found ${serviceCount} services matching your query.`,
+        description: `Found ${mockCBOMData.applications.length} applications with ${mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)} total services.`,
       });
     }, 2000);
   };
@@ -118,21 +84,27 @@ const CBOMViewer = () => {
       duration: 5000,
     });
     
-    // Here you would normally make an API call to start the GitHub scanning process
     console.log('Starting GitHub scan for:', url);
+  };
+
+  const handleApplicationSelect = (application: Application) => {
+    setSelectedApplication(application);
+    setSelectedService(null);
+    setSelectedNode(null);
+    setActiveTab('services');
   };
 
   const handleNodeSelect = (nodeData) => {
     setSelectedNode(nodeData);
   };
 
-  const handleServiceSelectAndNavigate = (service) => {
+  const handleServiceSelectAndNavigate = (service: Service) => {
     setSelectedService(service);
     setSelectedNode(null);
-    setActiveTab('overview'); // Automatically switch to overview when service is selected
+    setActiveTab('overview');
   };
 
-  const handleServiceDetails = (service) => {
+  const handleServiceDetails = (service: Service) => {
     setSelectedService(service);
     setShowServiceDetails(true);
   };
@@ -152,13 +124,40 @@ const CBOMViewer = () => {
       ...cbomData,
       cryptoAlgorithms: serviceCryptoAlgorithms,
       libraries: serviceLibraries,
-      application: {
-        ...cbomData.application,
-        name: selectedService.name,
-        version: selectedService.version,
-        riskLevel: selectedService.riskLevel
-      }
     };
+  };
+
+  const getCurrentServices = (): Service[] => {
+    if (!selectedApplication) return [];
+    return selectedApplication.services;
+  };
+
+  const getBreadcrumbItems = () => {
+    const items = [];
+    
+    if (selectedApplication) {
+      items.push({ 
+        label: 'Applications', 
+        onClick: () => {
+          setActiveTab('applications');
+          setSelectedApplication(null);
+          setSelectedService(null);
+        }
+      });
+      items.push({ 
+        label: selectedApplication.name, 
+        onClick: () => {
+          setActiveTab('services');
+          setSelectedService(null);
+        }
+      });
+    }
+    
+    if (selectedService) {
+      items.push({ label: selectedService.name, active: true });
+    }
+    
+    return items;
   };
 
   return (
@@ -179,14 +178,30 @@ const CBOMViewer = () => {
         {cbomData && (
           <div className="space-y-6">
             {/* High-level Metrics Dashboard */}
-            <MetricsDashboard services={services} cbomData={cbomData} />
+            <MetricsDashboard 
+              services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
+              cbomData={cbomData} 
+            />
+
+            {/* Breadcrumb */}
+            {(selectedApplication || selectedService) && (
+              <CBOMBreadcrumb items={getBreadcrumbItems()} />
+            )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="services" className="relative">
-                  Services ({services.length})
-                  {!selectedService && (
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="applications" className="relative">
+                  <Building className="h-4 w-4 mr-2" />
+                  Applications ({cbomData.applications.length})
+                  {!selectedApplication && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="services" disabled={!selectedApplication}>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Services
+                  {selectedApplication && (
+                    <span className="ml-1 text-xs">({selectedApplication.services.length})</span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="overview" disabled={!selectedService}>
@@ -198,55 +213,121 @@ const CBOMViewer = () => {
                 <TabsTrigger value="data-sources">Data Sources</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="services" className="space-y-6">
-                {/* Step 1: Service Selection */}
+              <TabsContent value="applications" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <div className="flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full text-sm font-bold">1</div>
-                      <Layers className="h-5 w-5" />
-                      Select a Service to Analyze
-                      {selectedService && (
+                      <Building className="h-5 w-5" />
+                      Select an Application to Analyze
+                      {selectedApplication && (
                         <div className="flex items-center gap-2 ml-auto">
                           <CheckCircle className="h-5 w-5 text-green-500" />
                           <span className="text-sm text-green-600 font-medium">
-                            {selectedService.name} selected
+                            {selectedApplication.name} selected
                           </span>
                           <Button 
                             size="sm" 
                             className="ml-2"
-                            onClick={() => setActiveTab('overview')}
+                            onClick={() => setActiveTab('services')}
                           >
-                            View Analysis <ArrowRight className="h-4 w-4 ml-1" />
+                            View Services <ArrowRight className="h-4 w-4 ml-1" />
                           </Button>
                         </div>
                       )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {!selectedService && (
+                    {!selectedApplication && (
                       <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-start gap-3">
                           <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full flex-shrink-0">
-                            <Search className="h-4 w-4 text-blue-600" />
+                            <Building className="h-4 w-4 text-blue-600" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-blue-900 mb-1">Choose a service to get started</h4>
+                            <h4 className="font-medium text-blue-900 mb-1">Choose an application to get started</h4>
                             <p className="text-sm text-blue-700">
-                              Select any service below to analyze its cryptographic dependencies and view detailed security insights.
+                              Select any application below to explore its services and analyze cryptographic dependencies.
                             </p>
                           </div>
                         </div>
                       </div>
                     )}
-                    <VirtualizedServicesGrid
-                      services={services}
-                      selectedService={selectedService}
-                      onServiceSelect={handleServiceSelectAndNavigate}
-                      onServiceDetails={handleServiceDetails}
+                    <ApplicationSelector
+                      applications={cbomData.applications}
+                      selectedApplication={selectedApplication}
+                      onApplicationSelect={handleApplicationSelect}
                     />
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="services" className="space-y-6">
+                {!selectedApplication ? (
+                  <Card className="text-center py-12">
+                    <CardContent>
+                      <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                        No Application Selected
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        Please select an application first to view its services.
+                      </p>
+                      <Button onClick={() => setActiveTab('applications')}>
+                        <ArrowRight className="h-4 w-4 mr-2" />
+                        Go to Applications
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full text-sm font-bold">2</div>
+                        <Layers className="h-5 w-5" />
+                        Select a Service from {selectedApplication.name}
+                        {selectedService && (
+                          <div className="flex items-center gap-2 ml-auto">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <span className="text-sm text-green-600 font-medium">
+                              {selectedService.name} selected
+                            </span>
+                            <Button 
+                              size="sm" 
+                              className="ml-2"
+                              onClick={() => setActiveTab('overview')}
+                            >
+                              View Analysis <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {!selectedService && (
+                        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full flex-shrink-0">
+                              <Search className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-blue-900 mb-1">Choose a service to analyze</h4>
+                              <p className="text-sm text-blue-700">
+                                Select any service below to analyze its cryptographic dependencies and view detailed security insights.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <VirtualizedServicesGrid
+                        services={getCurrentServices()}
+                        selectedService={selectedService}
+                        onServiceSelect={handleServiceSelectAndNavigate}
+                        onServiceDetails={handleServiceDetails}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="overview" className="space-y-6">
@@ -268,19 +349,11 @@ const CBOMViewer = () => {
                   </Card>
                 ) : (
                   <>
-                    {/* Breadcrumb */}
-                    <CBOMBreadcrumb 
-                      items={[
-                        { label: 'Services', onClick: () => setActiveTab('services') },
-                        { label: selectedService.name, active: true }
-                      ]} 
-                    />
-
-                    {/* Step 2: Analysis Results */}
+                    {/* Step 3: Analysis Results */}
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-sm font-bold">2</div>
+                          <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-sm font-bold">3</div>
                           <Shield className="h-5 w-5" />
                           Security Analysis for {selectedService.name}
                         </CardTitle>
@@ -388,9 +461,11 @@ const CBOMViewer = () => {
               <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
                 <span>Step 1: Generate data</span>
                 <ArrowRight className="h-4 w-4" />
-                <span>Step 2: Select service</span>
+                <span>Step 2: Select application</span>
                 <ArrowRight className="h-4 w-4" />
-                <span>Step 3: View analysis</span>
+                <span>Step 3: Select service</span>
+                <ArrowRight className="h-4 w-4" />
+                <span>Step 4: View analysis</span>
               </div>
             </CardContent>
           </Card>
