@@ -88,19 +88,23 @@ const CBOMViewer = () => {
         const librariesData = generateComponentsDrillDown(query, 'libraries');
         const languagesData = generateComponentsDrillDown(query, 'languages');
         
-        // Combine both libraries and languages data
+        // Combine both libraries and languages into a single components array
+        const allComponents = [
+          ...(librariesData?.components || []),
+          ...(languagesData?.components || [])
+        ];
+        
         const combinedData = {
           query,
-          componentType: 'combined' as const,
-          librariesComponents: librariesData?.components || [],
-          languagesComponents: languagesData?.components || [],
+          componentType: 'libraries' as const, // Keep the expected type
+          components: allComponents, // Use the expected property name
           totalApplications: mockCBOMData.applications.length,
           totalServices: mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)
         };
         
         setComponentsDrillDownData(combinedData);
         
-        const totalComponents = (librariesData?.components.length || 0) + (languagesData?.components.length || 0);
+        const totalComponents = allComponents.length;
         toast({
           title: "Components Analysis Complete",
           description: `Found ${librariesData?.components.length || 0} libraries and ${languagesData?.components.length || 0} languages across ${combinedData.totalApplications} applications.`,
