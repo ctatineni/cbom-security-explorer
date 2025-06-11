@@ -88,10 +88,10 @@ const CBOMViewer = () => {
         const librariesData = generateComponentsDrillDown(query, 'libraries');
         const languagesData = generateComponentsDrillDown(query, 'languages');
         
-        // Combine both libraries and languages into a single components array
+        // Combine both libraries and languages into a single components array with backend flags
         const allComponents = [
-          ...(librariesData?.components || []),
-          ...(languagesData?.components || [])
+          ...(librariesData?.components.map(comp => ({ ...comp, isLibrary: true, isLanguage: false })) || []),
+          ...(languagesData?.components.map(comp => ({ ...comp, isLibrary: false, isLanguage: true })) || [])
         ];
         
         const combinedData = {

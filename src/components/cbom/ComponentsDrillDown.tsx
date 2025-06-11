@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +32,8 @@ interface ComponentsDrillDownProps {
       }>;
       hasVulnerabilities?: boolean;
       riskLevel?: string;
+      isLibrary?: boolean; // Backend flag for library analysis
+      isLanguage?: boolean; // Backend flag for language analysis
     }>;
     totalApplications: number;
     totalServices: number;
@@ -44,6 +45,7 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
   const [minApplicationsFilter, setMinApplicationsFilter] = useState('');
+  const [componentTypeFilter, setComponentTypeFilter] = useState<'all' | 'libraries' | 'languages'>('all');
 
   const toggleComponent = (componentId: string) => {
     const newExpanded = new Set(expandedComponents);
@@ -73,7 +75,11 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
     const matchesMinApps = !minApplicationsFilter || 
       component.applicationCount >= parseInt(minApplicationsFilter);
     
-    return matchesSearch && matchesMinApps;
+    const matchesComponentType = componentTypeFilter === 'all' || 
+      (componentTypeFilter === 'libraries' && component.isLibrary) ||
+      (componentTypeFilter === 'languages' && component.isLanguage);
+    
+    return matchesSearch && matchesMinApps && matchesComponentType;
   });
 
   const getRiskBadge = (component: any) => {
@@ -102,34 +108,38 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
     );
   };
 
-  const componentTypeLabel = data.componentType === 'libraries' ? 'Libraries' : 'Programming Languages';
-  const componentIcon = data.componentType === 'libraries' ? Package : Code;
+  const libraryComponents = data.components.filter(comp => comp.isLibrary);
+  const languageComponents = data.components.filter(comp => comp.isLanguage);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {React.createElement(componentIcon, { className: "h-5 w-5" })}
-            {componentTypeLabel} Analysis Results
+            <Package className="h-5 w-5" />
+            Component Analysis View
           </CardTitle>
           <p className="text-sm text-gray-600">
             Query: "{data.query}"
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-5 gap-4 mb-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{data.components.length}</div>
-              <div className="text-sm text-gray-500">Unique {componentTypeLabel}</div>
+              <div className="text-sm text-gray-500">Total Components</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{libraryComponents.length}</div>
+              <div className="text-sm text-gray-500">Libraries</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-600">{languageComponents.length}</div>
+              <div className="text-sm text-gray-500">Languages</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{data.totalApplications}</div>
-              <div className="text-sm text-gray-500">Total Applications</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{data.totalServices}</div>
-              <div className="text-sm text-gray-500">Total Services</div>
+              <div className="text-sm text-gray-500">Applications</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
@@ -142,16 +152,28 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
           {/* Filters */}
           <div className="flex gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Search {componentTypeLabel}</label>
+              <label className="text-sm font-medium mb-2 block">Search Components</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder={`Search ${componentTypeLabel.toLowerCase()} or applications...`}
+                  placeholder="Search components or applications..."
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   className="pl-10"
                 />
               </div>
+            </div>
+            <div className="w-48">
+              <label className="text-sm font-medium mb-2 block">Component Type</label>
+              <select
+                value={componentTypeFilter}
+                onChange={(e) => setComponentTypeFilter(e.target.value as 'all' | 'libraries' | 'languages')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="all">All Components</option>
+                <option value="libraries">Libraries Only</option>
+                <option value="languages">Languages Only</option>
+              </select>
             </div>
             <div className="w-48">
               <label className="text-sm font-medium mb-2 block">Min Applications</label>
@@ -168,6 +190,7 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
                 onClick={() => {
                   setSearchFilter('');
                   setMinApplicationsFilter('');
+                  setComponentTypeFilter('all');
                 }}
                 className="flex items-center gap-2"
               >
@@ -178,16 +201,16 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
           </div>
 
           <div className="text-sm text-gray-600 mb-4">
-            Showing {filteredComponents.length} of {data.components.length} {componentTypeLabel.toLowerCase()}
+            Showing {filteredComponents.length} of {data.components.length} components
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>{componentTypeLabel} Ranked by Usage</CardTitle>
+          <CardTitle>Components Ranked by Usage</CardTitle>
           <p className="text-sm text-gray-600">
-            Sorted by number of applications using each {data.componentType === 'libraries' ? 'library' : 'language'}
+            Sorted by number of applications using each component
           </p>
         </CardHeader>
         <CardContent>
@@ -207,11 +230,20 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
                           ) : (
                             <ChevronRight className="h-4 w-4" />
                           )}
-                          {React.createElement(componentIcon, { className: "h-5 w-5 text-blue-600" })}
+                          {component.isLibrary ? (
+                            <Package className="h-5 w-5 text-blue-600" />
+                          ) : (
+                            <Code className="h-5 w-5 text-purple-600" />
+                          )}
                           <div>
-                            <div className="font-medium">{component.name}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{component.name}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {component.isLibrary ? 'Library' : 'Language'}
+                              </Badge>
+                            </div>
                             <div className="text-sm text-gray-500">
-                              {data.componentType === 'libraries' 
+                              {component.isLibrary 
                                 ? `Version ${component.version || 'N/A'}`
                                 : `Language: ${component.language || component.name}`
                               }
@@ -278,7 +310,7 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
                                             </Badge>
                                           </div>
                                           <div className="text-xs text-gray-500">
-                                            {service.usage.length} {data.componentType === 'libraries' ? 'functions' : 'frameworks'}
+                                            {service.usage.length} {component.isLibrary ? 'functions' : 'frameworks'}
                                           </div>
                                         </div>
                                       </div>
@@ -290,7 +322,7 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
                                           <TableHeader>
                                             <TableRow>
                                               <TableHead className="text-xs">
-                                                {data.componentType === 'libraries' ? 'Function' : 'Framework/Tool'}
+                                                {component.isLibrary ? 'Function' : 'Framework/Tool'}
                                               </TableHead>
                                               <TableHead className="text-xs">Used In</TableHead>
                                               <TableHead className="text-xs">Purpose</TableHead>
