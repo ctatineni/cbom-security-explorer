@@ -508,5 +508,3 @@ const CBOMViewer = () => {
 };
 
 export default CBOMViewer;
-
-}
