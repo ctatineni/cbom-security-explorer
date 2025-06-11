@@ -1,644 +1,572 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileKey, Key, AlertTriangle, CheckCircle, Calendar, Building, Search, Filter, Download, RefreshCw } from 'lucide-react';
-import { CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
+import { AlertTriangle, CheckCircle, Clock, Eye, Filter, Search, FileKey, Key, Shield, Building, Layers, Calendar, Download } from 'lucide-react';
+import { CryptoMaterialsKnowledgeGraph } from './CryptoMaterialsKnowledgeGraph';
+
+interface Certificate {
+  id: string;
+  commonName: string;
+  appId: string;
+  serviceName: string;
+  type: string;
+  issuer: string;
+  status: string;
+  riskLevel: string;
+  expiryDate: string;
+  applications?: string[];
+}
+
+interface KeyMaterial {
+  id: string;
+  keyId: string;
+  appId: string;
+  serviceName: string;
+  type: string;
+  keyLength: string;
+  keySource?: string;
+  status: string;
+  riskLevel: string;
+  createdDate: string;
+  applications?: string[];
+}
+
+interface CryptoMaterialsData {
+  certificates: Certificate[];
+  keys: KeyMaterial[];
+}
 
 interface CryptoMaterialsAnalysisProps {
   data: CryptoMaterialsData;
 }
 
-interface FilterState {
-  search: string;
-  issuer: string;
-  environment: string;
-  keyType: string;
-  minKeySize: string;
-  expiryStatus: string;
-  applications: string;
-}
-
 export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = ({ data }) => {
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    issuer: '',
-    environment: '',
-    keyType: '',
-    minKeySize: '',
-    expiryStatus: '',
-    applications: ''
-  });
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [riskLevelFilter, setRiskLevelFilter] = useState('all');
+  const [issuerFilter, setIssuerFilter] = useState('all');
+  const [applicationFilter, setApplicationFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const [selectedTab, setSelectedTab] = useState('overview');
-
-  const analytics = useMemo(() => {
-    const expiringSoon = data.certificates.filter(cert => cert.daysUntilExpiry > 0 && cert.daysUntilExpiry <= 30);
-    const expired = data.certificates.filter(cert => cert.isExpired);
-    const selfSigned = data.certificates.filter(cert => cert.isSelfSigned);
-    const weakKeys = data.keys.filter(key => 
-      (key.type === 'RSA' && key.keySize < 2048) || 
-      (key.type === 'AES' && key.keySize < 128)
-    );
-    
-    // Application usage analysis with detailed breakdown
-    const appUsage = new Map();
-    data.certificates.forEach(cert => {
-      cert.applications.forEach(app => {
-        if (!appUsage.has(app)) {
-          appUsage.set(app, { 
-            certificates: 0, 
-            keys: 0, 
-            services: new Set(),
-            environments: new Set(),
-            riskScore: 0
-          });
-        }
-        appUsage.get(app).certificates++;
-        cert.services?.forEach(service => appUsage.get(app).services.add(service));
-        appUsage.get(app).environments.add(cert.environment);
-        if (cert.isExpired || cert.daysUntilExpiry <= 30) {
-          appUsage.get(app).riskScore += 10;
-        }
-      });
-    });
-    
-    data.keys.forEach(key => {
-      key.applications.forEach(app => {
-        if (!appUsage.has(app)) {
-          appUsage.set(app, { 
-            certificates: 0, 
-            keys: 0, 
-            services: new Set(),
-            environments: new Set(),
-            riskScore: 0
-          });
-        }
-        appUsage.get(app).keys++;
-        key.services?.forEach(service => appUsage.get(app).services.add(service));
-        appUsage.get(app).environments.add(key.environment);
-        if (!key.isActive || ((key.type === 'RSA' && key.keySize < 2048) || (key.type === 'AES' && key.keySize < 128))) {
-          appUsage.get(app).riskScore += 5;
-        }
-      });
-    });
+  const filterOptions = useMemo(() => {
+    const allMaterials = [...data.certificates, ...data.keys];
     
     return {
-      expiringSoon,
-      expired,
-      selfSigned,
-      weakKeys,
-      appUsage: Array.from(appUsage.entries()).map(([app, usage]) => ({ 
-        app, 
-        ...usage,
-        services: Array.from(usage.services),
-        environments: Array.from(usage.environments)
-      })).sort((a, b) => b.riskScore - a.riskScore)
+      statuses: [...new Set(allMaterials.map(item => item.status))].filter(status => status && status.trim() !== ''),
+      types: [...new Set([...data.certificates.map(cert => cert.type), ...data.keys.map(key => key.type)])].filter(type => type && type.trim() !== ''),
+      riskLevels: [...new Set(allMaterials.map(item => item.riskLevel))].filter(risk => risk && risk.trim() !== ''),
+      issuers: [...new Set([
+        ...data.certificates.map(cert => cert.issuer),
+        ...data.keys.map(key => key.keySource || 'Unknown')
+      ])].filter(issuer => issuer && issuer.trim() !== ''),
+      applications: [...new Set(allMaterials.flatMap(item => item.applications || []))].filter(app => app && app.trim() !== '')
     };
   }, [data]);
 
   const filteredCertificates = useMemo(() => {
     return data.certificates.filter(cert => {
-      const matchesSearch = !filters.search || 
-        cert.commonName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        cert.issuer.toLowerCase().includes(filters.search.toLowerCase()) ||
-        cert.applications.some(app => app.toLowerCase().includes(filters.search.toLowerCase()));
+      const matchesSearch = !searchFilter || 
+        cert.commonName.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        cert.issuer.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        cert.appId.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        cert.serviceName.toLowerCase().includes(searchFilter.toLowerCase());
       
-      const matchesIssuer = !filters.issuer || cert.issuer === filters.issuer;
-      const matchesEnvironment = !filters.environment || cert.environment === filters.environment;
-      const matchesKeySize = !filters.minKeySize || cert.keySize >= parseInt(filters.minKeySize);
-      const matchesApplications = !filters.applications || 
-        cert.applications.some(app => app.toLowerCase().includes(filters.applications.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || cert.status === statusFilter;
+      const matchesType = typeFilter === 'all' || cert.type === typeFilter;
+      const matchesRiskLevel = riskLevelFilter === 'all' || cert.riskLevel === riskLevelFilter;
+      const matchesIssuer = issuerFilter === 'all' || cert.issuer === issuerFilter;
+      const matchesApplication = applicationFilter === 'all' || 
+        (cert.applications && cert.applications.includes(applicationFilter));
       
-      let matchesExpiryStatus = true;
-      if (filters.expiryStatus === 'expired') {
-        matchesExpiryStatus = cert.isExpired;
-      } else if (filters.expiryStatus === 'expiring-soon') {
-        matchesExpiryStatus = !cert.isExpired && cert.daysUntilExpiry <= 30;
-      } else if (filters.expiryStatus === 'valid') {
-        matchesExpiryStatus = !cert.isExpired && cert.daysUntilExpiry > 30;
-      }
-      
-      return matchesSearch && matchesIssuer && matchesEnvironment && 
-             matchesKeySize && matchesExpiryStatus && matchesApplications;
+      return matchesSearch && matchesStatus && matchesType && matchesRiskLevel && matchesIssuer && matchesApplication;
     });
-  }, [data.certificates, filters]);
+  }, [data.certificates, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter]);
 
   const filteredKeys = useMemo(() => {
     return data.keys.filter(key => {
-      const matchesSearch = !filters.search || 
-        key.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        key.location.toLowerCase().includes(filters.search.toLowerCase()) ||
-        key.applications.some(app => app.toLowerCase().includes(filters.search.toLowerCase()));
+      const matchesSearch = !searchFilter || 
+        key.keyId.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (key.keySource && key.keySource.toLowerCase().includes(searchFilter.toLowerCase())) ||
+        key.appId.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        key.serviceName.toLowerCase().includes(searchFilter.toLowerCase());
       
-      const matchesKeyType = !filters.keyType || key.type === filters.keyType;
-      const matchesEnvironment = !filters.environment || key.environment === filters.environment;
-      const matchesKeySize = !filters.minKeySize || key.keySize >= parseInt(filters.minKeySize);
-      const matchesApplications = !filters.applications || 
-        key.applications.some(app => app.toLowerCase().includes(filters.applications.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || key.status === statusFilter;
+      const matchesType = typeFilter === 'all' || key.type === typeFilter;
+      const matchesRiskLevel = riskLevelFilter === 'all' || key.riskLevel === riskLevelFilter;
+      const matchesIssuer = issuerFilter === 'all' || key.keySource === issuerFilter;
+      const matchesApplication = applicationFilter === 'all' || 
+        (key.applications && key.applications.includes(applicationFilter));
       
-      return matchesSearch && matchesKeyType && matchesEnvironment && 
-             matchesKeySize && matchesApplications;
+      return matchesSearch && matchesStatus && matchesType && matchesRiskLevel && matchesIssuer && matchesApplication;
     });
-  }, [data.keys, filters]);
+  }, [data.keys, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter]);
 
   const clearFilters = () => {
-    setFilters({
-      search: '',
-      issuer: '',
-      environment: '',
-      keyType: '',
-      minKeySize: '',
-      expiryStatus: '',
-      applications: ''
-    });
+    setSearchFilter('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setRiskLevelFilter('all');
+    setIssuerFilter('all');
+    setApplicationFilter('all');
   };
-
-  const getStatusBadge = (isExpired: boolean, daysUntilExpiry: number) => {
-    if (isExpired) {
-      return <Badge variant="destructive" className="text-xs">Expired</Badge>;
-    }
-    if (daysUntilExpiry <= 30) {
-      return <Badge variant="destructive" className="text-xs">Expiring Soon</Badge>;
-    }
-    if (daysUntilExpiry <= 90) {
-      return <Badge className="text-xs bg-yellow-500">Warning</Badge>;
-    }
-    return <Badge variant="secondary" className="text-xs">Valid</Badge>;
-  };
-
-  const getKeyStrengthBadge = (key: any) => {
-    const isWeak = (key.type === 'RSA' && key.keySize < 2048) || 
-                   (key.type === 'AES' && key.keySize < 128);
-    
-    return isWeak ? (
-      <Badge variant="destructive" className="text-xs">Weak</Badge>
-    ) : (
-      <Badge variant="secondary" className="text-xs">Strong</Badge>
-    );
-  };
-
-  const getRiskBadge = (riskScore: number) => {
-    if (riskScore >= 20) {
-      return <Badge variant="destructive" className="text-xs">High Risk</Badge>;
-    } else if (riskScore >= 10) {
-      return <Badge className="text-xs bg-yellow-500">Medium Risk</Badge>;
-    }
-    return <Badge variant="secondary" className="text-xs">Low Risk</Badge>;
-  };
-
-  // Get unique values for filter dropdowns
-  const uniqueIssuers = [...new Set(data.certificates.map(cert => cert.issuer))];
-  const uniqueEnvironments = [...new Set([...data.certificates.map(cert => cert.environment), ...data.keys.map(key => key.environment)])];
-  const uniqueKeyTypes = [...new Set(data.keys.map(key => key.type))];
 
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{analytics.expired.length}</div>
-            <div className="text-sm text-red-700">Expired Certificates</div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileKey className="h-5 w-5 text-blue-600" />
+              <div>
+                <div className="text-2xl font-bold">{data.certificates.length}</div>
+                <div className="text-sm text-gray-500">Certificates</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{analytics.expiringSoon.length}</div>
-            <div className="text-sm text-yellow-700">Expiring Soon</div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-green-600" />
+              <div>
+                <div className="text-2xl font-bold">{data.keys.length}</div>
+                <div className="text-sm text-gray-500">Keys</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-orange-50 border-orange-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{analytics.weakKeys.length}</div>
-            <div className="text-sm text-orange-700">Weak Keys</div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div>
+                <div className="text-2xl font-bold text-red-600">
+                  {[...data.certificates, ...data.keys].filter(item => item.riskLevel === 'high').length}
+                </div>
+                <div className="text-sm text-gray-500">High Risk</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{analytics.appUsage.length}</div>
-            <div className="text-sm text-blue-700">Applications</div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-yellow-600" />
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {data.certificates.filter(cert => cert.status === 'expiring').length}
+                </div>
+                <div className="text-sm text-gray-500">Expiring Soon</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Advanced Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Advanced Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search certificates, keys, apps..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({...filters, search: e.target.value})}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Issuer</label>
-              <Select value={filters.issuer} onValueChange={(value) => setFilters({...filters, issuer: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All issuers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All issuers</SelectItem>
-                  {uniqueIssuers.map(issuer => (
-                    <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Environment</label>
-              <Select value={filters.environment} onValueChange={(value) => setFilters({...filters, environment: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All environments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All environments</SelectItem>
-                  {uniqueEnvironments.map(env => (
-                    <SelectItem key={env} value={env}>{env}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Key Type</label>
-              <Select value={filters.keyType} onValueChange={(value) => setFilters({...filters, keyType: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All key types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All key types</SelectItem>
-                  {uniqueKeyTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Min Key Size</label>
-              <Input
-                type="number"
-                placeholder="e.g., 2048"
-                value={filters.minKeySize}
-                onChange={(e) => setFilters({...filters, minKeySize: e.target.value})}
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Expiry Status</label>
-              <Select value={filters.expiryStatus} onValueChange={(value) => setFilters({...filters, expiryStatus: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                  <SelectItem value="expiring-soon">Expiring Soon</SelectItem>
-                  <SelectItem value="valid">Valid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Applications</label>
-              <Input
-                placeholder="Filter by application..."
-                value={filters.applications}
-                onChange={(e) => setFilters({...filters, applications: e.target.value})}
-              />
-            </div>
-            
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Clear All
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Content Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">
-            <Building className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="certificates">
-            <FileKey className="h-4 w-4 mr-2" />
-            Certificates ({filteredCertificates.length})
-          </TabsTrigger>
-          <TabsTrigger value="keys">
-            <Key className="h-4 w-4 mr-2" />
-            Keys ({filteredKeys.length})
-          </TabsTrigger>
-          <TabsTrigger value="applications">
-            <Building className="h-4 w-4 mr-2" />
-            Applications ({analytics.appUsage.length})
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="certificates">Certificates</TabsTrigger>
+          <TabsTrigger value="keys">Keys</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview" className="space-y-6">
+          <CryptoMaterialsKnowledgeGraph data={data} />
+        </TabsContent>
+
+        <TabsContent value="certificates" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>High-Risk Applications</CardTitle>
-              <p className="text-sm text-gray-600">Applications with the highest security risk scores</p>
+              <CardTitle className="flex items-center gap-2">
+                <FileKey className="h-5 w-5" />
+                Certificates Analysis
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {analytics.appUsage.slice(0, 10).map((usage, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Building className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-medium">{usage.app}</div>
-                        <div className="text-sm text-gray-600">
-                          {usage.certificates} certificates, {usage.keys} keys across {usage.services.length} services
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getRiskBadge(usage.riskScore)}
-                      <div className="text-sm text-gray-500">Score: {usage.riskScore}</div>
+              {/* Advanced Filters */}
+              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search certificates..."
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
                   </div>
-                ))}
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Status</label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {filterOptions.statuses.map(status => (
+                          <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Type</label>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {filterOptions.types.map(type => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
+                    <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Risk Levels" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Risk Levels</SelectItem>
+                        {filterOptions.riskLevels.map(risk => (
+                          <SelectItem key={risk} value={risk}>{risk}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Issuer</label>
+                    <Select value={issuerFilter} onValueChange={setIssuerFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Issuers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Issuers</SelectItem>
+                        {filterOptions.issuers.map(issuer => (
+                          <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Application</label>
+                    <Select value={applicationFilter} onValueChange={setApplicationFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Applications" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Applications</SelectItem>
+                        {filterOptions.applications.map(app => (
+                          <SelectItem key={app} value={app}>{app}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Showing {filteredCertificates.length} of {data.certificates.length} certificates
+                  </div>
+                  <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="certificates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Certificate Inventory</CardTitle>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Common Name</TableHead>
-                    <TableHead>Issuer</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead>Key Size</TableHead>
-                    <TableHead>App ID</TableHead>
-                    <TableHead>Applications</TableHead>
-                    <TableHead>Services</TableHead>
-                    <TableHead>Environment</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCertificates.map((cert) => (
-                    <TableRow key={cert.id}>
-                      <TableCell className="font-mono text-sm">{cert.commonName}</TableCell>
-                      <TableCell className="text-sm">{cert.issuer}</TableCell>
-                      <TableCell className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          {cert.validTo}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{cert.keySize} bits</TableCell>
-                      <TableCell className="text-xs font-mono">{cert.id}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {cert.applications.slice(0, 2).map((app, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {app}
-                            </Badge>
-                          ))}
-                          {cert.applications.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{cert.applications.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {cert.services?.slice(0, 2).map((service, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {service}
-                            </Badge>
-                          ))}
-                          {cert.services && cert.services.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{cert.services.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {cert.environment}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(cert.isExpired, cert.daysUntilExpiry)}
-                      </TableCell>
+              {/* Certificates Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Common Name</TableHead>
+                      <TableHead>App ID</TableHead>
+                      <TableHead>Service Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Issuer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Risk Level</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                      <TableHead>Applications</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="keys" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Cryptographic Keys</CardTitle>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>App ID</TableHead>
-                    <TableHead>Applications</TableHead>
-                    <TableHead>Services</TableHead>
-                    <TableHead>Environment</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredKeys.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-mono text-sm">{key.name}</TableCell>
-                      <TableCell className="text-sm">{key.type}</TableCell>
-                      <TableCell className="text-sm">{key.keySize} bits</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {key.usage.slice(0, 2).map((usage, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {usage}
-                            </Badge>
-                          ))}
-                          {key.usage.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{key.usage.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{key.location}</TableCell>
-                      <TableCell className="text-xs font-mono">{key.id}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {key.applications.slice(0, 2).map((app, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {app}
-                            </Badge>
-                          ))}
-                          {key.applications.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{key.applications.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {key.services?.slice(0, 2).map((service, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {service}
-                            </Badge>
-                          ))}
-                          {key.services && key.services.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{key.services.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {key.environment}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {getKeyStrengthBadge(key)}
-                          {key.isActive ? (
-                            <Badge variant="secondary" className="text-xs">Active</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Inactive</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="applications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Security Overview</CardTitle>
-              <p className="text-sm text-gray-600">Detailed view of crypto materials usage across all applications</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analytics.appUsage.map((usage, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Building className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <h4 className="font-medium">{usage.app}</h4>
-                          <div className="text-sm text-gray-600">
-                            {usage.services.length} services across {usage.environments.length} environments
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCertificates.map((cert) => (
+                      <TableRow key={cert.id}>
+                        <TableCell className="font-medium">{cert.commonName}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {cert.appId}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{cert.serviceName}</TableCell>
+                        <TableCell>{cert.type}</TableCell>
+                        <TableCell>{cert.issuer}</TableCell>
+                        <TableCell>{getStatusBadge(cert.status)}</TableCell>
+                        <TableCell>{getRiskBadge(cert.riskLevel)}</TableCell>
+                        <TableCell>{cert.expiryDate}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {cert.applications?.slice(0, 2).map((app, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {app}
+                              </Badge>
+                            ))}
+                            {cert.applications && cert.applications.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{cert.applications.length - 2}
+                              </Badge>
+                            )}
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {getRiskBadge(usage.riskScore)}
-                        <div className="text-right text-sm text-gray-600">
-                          <div>{usage.certificates} certificates</div>
-                          <div>{usage.keys} keys</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <h5 className="font-medium mb-2">Services</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {usage.services.map((service, serviceIndex) => (
-                            <Badge key={serviceIndex} variant="secondary" className="text-xs">
-                              {service}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h5 className="font-medium mb-2">Environments</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {usage.environments.map((env, envIndex) => (
-                            <Badge key={envIndex} variant="outline" className="text-xs">
-                              {env}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="keys" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Keys Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Advanced Filters - similar structure as certificates */}
+              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search keys..."
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
                   </div>
-                ))}
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Status</label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {filterOptions.statuses.map(status => (
+                          <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Type</label>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {filterOptions.types.map(type => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
+                    <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Risk Levels" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Risk Levels</SelectItem>
+                        {filterOptions.riskLevels.map(risk => (
+                          <SelectItem key={risk} value={risk}>{risk}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Source</label>
+                    <Select value={issuerFilter} onValueChange={setIssuerFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Sources" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        {filterOptions.issuers.map(issuer => (
+                          <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Application</label>
+                    <Select value={applicationFilter} onValueChange={setApplicationFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Applications" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Applications</SelectItem>
+                        {filterOptions.applications.map(app => (
+                          <SelectItem key={app} value={app}>{app}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Showing {filteredKeys.length} of {data.keys.length} keys
+                  </div>
+                  <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+
+              {/* Keys Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Key ID</TableHead>
+                      <TableHead>App ID</TableHead>
+                      <TableHead>Service Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Key Length</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Risk Level</TableHead>
+                      <TableHead>Created Date</TableHead>
+                      <TableHead>Applications</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredKeys.map((key) => (
+                      <TableRow key={key.id}>
+                        <TableCell className="font-medium font-mono text-sm">{key.keyId}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {key.appId}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{key.serviceName}</TableCell>
+                        <TableCell>{key.type}</TableCell>
+                        <TableCell>{key.keyLength}</TableCell>
+                        <TableCell>{key.keySource || 'Unknown'}</TableCell>
+                        <TableCell>{getStatusBadge(key.status)}</TableCell>
+                        <TableCell>{getRiskBadge(key.riskLevel)}</TableCell>
+                        <TableCell>{key.createdDate}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {key.applications?.slice(0, 2).map((app, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {app}
+                              </Badge>
+                            ))}
+                            {key.applications && key.applications.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{key.applications.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
+  );
+};
+
+// Helper functions
+const getStatusBadge = (status: string) => {
+  const statusConfig = {
+    active: { variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
+    expiring: { variant: 'destructive' as const, icon: Clock, color: 'text-yellow-600' },
+    expired: { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' },
+    revoked: { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' }
+  };
+  
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+  const IconComponent = config.icon;
+  
+  return (
+    <Badge variant={config.variant} className="text-xs">
+      <IconComponent className={`h-3 w-3 mr-1 ${config.color}`} />
+      {status}
+    </Badge>
+  );
+};
+
+const getRiskBadge = (riskLevel: string) => {
+  const riskConfig = {
+    low: { variant: 'secondary' as const, color: 'text-green-600' },
+    medium: { variant: 'default' as const, color: 'text-yellow-600' },
+    high: { variant: 'destructive' as const, color: 'text-red-600' }
+  };
+  
+  const config = riskConfig[riskLevel as keyof typeof riskConfig] || riskConfig.low;
+  
+  return (
+    <Badge variant={config.variant} className="text-xs">
+      <Shield className={`h-3 w-3 mr-1 ${config.color}`} />
+      {riskLevel}
+    </Badge>
   );
 };
