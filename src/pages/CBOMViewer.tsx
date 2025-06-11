@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,7 +128,7 @@ const CBOMViewer = () => {
     
     cbomData.applications.forEach(app => {
       app.services.forEach(service => {
-        const components = componentType === 'libraries' ? service.libraries : service.programmingLanguages;
+        const components = componentType === 'libraries' ? service.libraries : [{ name: service.programmingLanguage, language: service.programmingLanguage }];
         components?.forEach(component => {
           if (componentType === 'libraries' && component.algorithms?.includes('rsa-2048')) {
             const key = component.name;
@@ -164,7 +165,7 @@ const CBOMViewer = () => {
               serviceName: service.name,
               applicationName: app.name,
               appId: app.id,
-              usage: component.frameworks || []
+              usage: []
             });
             componentUsage.get(key).totalUsages++;
           }
