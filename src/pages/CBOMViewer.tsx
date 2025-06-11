@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,35 +73,36 @@ const CBOMViewer = () => {
   const handleNaturalLanguageSearch = async (query: string) => {
     setLoading(true);
     
-    // Check if query is asking for components analysis (libraries or languages)
-    if ((query.toLowerCase().includes('libraries') || query.toLowerCase().includes('languages')) && 
-        (query.toLowerCase().includes('rsa-2048') || query.toLowerCase().includes('using'))) {
-      setTimeout(() => {
-        const drillDownData = generateComponentsDrillDown(query);
-        setComponentsDrillDownData(drillDownData);
-        setActiveTab('components-analysis');
-        setLoading(false);
-        
-        const componentType = cbomAnalysisType === 'libraries' ? 'libraries' : 'programming languages';
-        toast({
-          title: "Components Analysis Complete",
-          description: `Found ${drillDownData.components.length} unique ${componentType} across ${drillDownData.totalApplications} applications.`,
-        });
-      }, 2000);
-    } else {
-      setTimeout(() => {
-        setCbomData(mockCBOMData);
-        setSelectedApplication(null);
-        setSelectedService(null);
-        setActiveTab('applications');
-        setLoading(false);
-        
-        toast({
-          title: "Analysis Complete",
-          description: `Found ${mockCBOMData.applications.length} applications with ${mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)} total services.`,
-        });
-      }, 2000);
-    }
+    // Simulate search - always load mock data first
+    setTimeout(() => {
+      setCbomData(mockCBOMData);
+      setActiveTab('applications');
+      setLoading(false);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found ${mockCBOMData.applications.length} applications with ${mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)} total services.`,
+      });
+
+      // Check if query is asking for components analysis (libraries or languages)
+      if ((query.toLowerCase().includes('libraries') || query.toLowerCase().includes('languages')) && 
+          (query.toLowerCase().includes('rsa-2048') || query.toLowerCase().includes('using'))) {
+        // Generate components drill down data after mock data is loaded
+        setTimeout(() => {
+          const drillDownData = generateComponentsDrillDown(query);
+          if (drillDownData) {
+            setComponentsDrillDownData(drillDownData);
+            setActiveTab('components-analysis');
+            
+            const componentType = cbomAnalysisType === 'libraries' ? 'libraries' : 'programming languages';
+            toast({
+              title: "Components Analysis Complete",
+              description: `Found ${drillDownData.components.length} unique ${componentType} across ${drillDownData.totalApplications} applications.`,
+            });
+          }
+        }, 500);
+      }
+    }, 2000);
   };
 
   const handleCryptoMaterialsSearch = async (query: string) => {
@@ -128,13 +128,42 @@ const CBOMViewer = () => {
     
     cbomData.applications.forEach(app => {
       app.services.forEach(service => {
-        const components = componentType === 'libraries' ? service.libraries : [{ name: service.programmingLanguage, language: service.programmingLanguage }];
-        components?.forEach(component => {
-          if (componentType === 'libraries' && component.algorithms?.includes('rsa-2048')) {
-            const key = component.name;
+        if (componentType === 'libraries' && service.libraries) {
+          service.libraries.forEach(lib => {
+            if (lib.algorithms?.includes('rsa-2048')) {
+              const key = lib.name;
+              if (!componentUsage.has(key)) {
+                componentUsage.set(key, {
+                  id: lib.name.toLowerCase().replace(/\s+/g, '-'),
+                  name: lib.name,
+                  version: lib.version,
+                  hasVulnerabilities: lib.algorithms?.includes('deprecated') || false,
+                  applications: new Set(),
+                  services: [],
+                  totalUsages: 0
+                });
+              }
+              
+              componentUsage.get(key).applications.add(app.name);
+              componentUsage.get(key).services.push({
+                serviceName: service.name,
+                applicationName: app.name,
+                appId: app.id,
+                usage: lib.functions || []
+              });
+              componentUsage.get(key).totalUsages++;
+            }
+          });
+        } else if (componentType === 'languages') {
+          const language = service.programmingLanguage;
+          if (language) {
+            const key = language;
             if (!componentUsage.has(key)) {
               componentUsage.set(key, {
-                component: component,
+                id: language.toLowerCase().replace(/\s+/g, '-'),
+                name: language,
+                language: language,
+                hasVulnerabilities: false,
                 applications: new Set(),
                 services: [],
                 totalUsages: 0
@@ -146,36 +175,21 @@ const CBOMViewer = () => {
               serviceName: service.name,
               applicationName: app.name,
               appId: app.id,
-              usage: component.functions || []
-            });
-            componentUsage.get(key).totalUsages++;
-          } else if (componentType === 'languages') {
-            const key = component.name || component.language;
-            if (!componentUsage.has(key)) {
-              componentUsage.set(key, {
-                component: component,
-                applications: new Set(),
-                services: [],
-                totalUsages: 0
-              });
-            }
-            
-            componentUsage.get(key).applications.add(app.name);
-            componentUsage.get(key).services.push({
-              serviceName: service.name,
-              applicationName: app.name,
-              appId: app.id,
-              usage: []
+              usage: service.libraries?.map(lib => ({
+                name: lib.name,
+                framework: lib.name,
+                purpose: 'Library dependency'
+              })) || []
             });
             componentUsage.get(key).totalUsages++;
           }
-        });
+        }
       });
     });
     
     const components = Array.from(componentUsage.values())
       .map(data => ({
-        ...data.component,
+        ...data,
         applicationCount: data.applications.size,
         serviceCount: data.services.length,
         applications: Array.from(data.applications),
@@ -494,3 +508,5 @@ const CBOMViewer = () => {
 };
 
 export default CBOMViewer;
+
+}
