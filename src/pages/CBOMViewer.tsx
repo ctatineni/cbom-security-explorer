@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, Building, Key, FileKey } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
+import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, Building, Key, FileKey, Code, Package, Filter } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { CBOMHeader } from '@/components/cbom/CBOMHeader';
@@ -13,8 +15,8 @@ import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
 import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { ApplicationSelector } from '@/components/cbom/ApplicationSelector';
-import { LibrariesDrillDown } from '@/components/cbom/LibrariesDrillDown';
-import { CryptoMaterialsKnowledgeGraph } from '@/components/cbom/CryptoMaterialsKnowledgeGraph';
+import { ComponentsDrillDown } from '@/components/cbom/ComponentsDrillDown';
+import { CryptoMaterialsAnalysis } from '@/components/cbom/CryptoMaterialsAnalysis';
 import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMData';
 import { mockCryptoMaterialsData, CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +32,7 @@ interface DataSource {
 
 const CBOMViewer = () => {
   const [searchMode, setSearchMode] = useState<'cbom' | 'crypto-materials'>('cbom');
+  const [cbomAnalysisType, setCbomAnalysisType] = useState<'libraries' | 'languages'>('libraries');
   const [cbomData, setCbomData] = useState<CBOMData | null>(null);
   const [cryptoMaterialsData, setCryptoMaterialsData] = useState<CryptoMaterialsData | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -38,7 +41,7 @@ const CBOMViewer = () => {
   const [loading, setLoading] = useState(false);
   const [showServiceDetails, setShowServiceDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('search-selection');
-  const [librariesDrillDownData, setLibrariesDrillDownData] = useState(null);
+  const [componentsDrillDownData, setComponentsDrillDownData] = useState(null);
   
   const [dataSources] = useState<DataSource[]>([
     {
@@ -70,17 +73,19 @@ const CBOMViewer = () => {
   const handleNaturalLanguageSearch = async (query: string) => {
     setLoading(true);
     
-    // Check if query is asking for libraries analysis
-    if (query.toLowerCase().includes('libraries') && query.toLowerCase().includes('rsa-2048')) {
+    // Check if query is asking for components analysis (libraries or languages)
+    if ((query.toLowerCase().includes('libraries') || query.toLowerCase().includes('languages')) && 
+        (query.toLowerCase().includes('rsa-2048') || query.toLowerCase().includes('using'))) {
       setTimeout(() => {
-        const drillDownData = generateLibrariesDrillDown(query);
-        setLibrariesDrillDownData(drillDownData);
-        setActiveTab('libraries-analysis');
+        const drillDownData = generateComponentsDrillDown(query);
+        setComponentsDrillDownData(drillDownData);
+        setActiveTab('components-analysis');
         setLoading(false);
         
+        const componentType = cbomAnalysisType === 'libraries' ? 'libraries' : 'programming languages';
         toast({
-          title: "Libraries Analysis Complete",
-          description: `Found ${drillDownData.libraries.length} unique libraries using RSA-2048 across ${drillDownData.totalApplications} applications.`,
+          title: "Components Analysis Complete",
+          description: `Found ${drillDownData.components.length} unique ${componentType} across ${drillDownData.totalApplications} applications.`,
         });
       }, 2000);
     } else {
@@ -114,42 +119,62 @@ const CBOMViewer = () => {
     }, 2000);
   };
 
-  const generateLibrariesDrillDown = (query: string) => {
+  const generateComponentsDrillDown = (query: string) => {
     if (!cbomData) return null;
     
-    // Extract all libraries using RSA-2048 and aggregate data
-    const libraryUsage = new Map();
+    const componentUsage = new Map();
+    const componentType = cbomAnalysisType;
     
     cbomData.applications.forEach(app => {
       app.services.forEach(service => {
-        service.libraries?.forEach(lib => {
-          if (lib.algorithms?.includes('rsa-2048')) {
-            const key = lib.name;
-            if (!libraryUsage.has(key)) {
-              libraryUsage.set(key, {
-                library: lib,
+        const components = componentType === 'libraries' ? service.libraries : service.programmingLanguages;
+        components?.forEach(component => {
+          if (componentType === 'libraries' && component.algorithms?.includes('rsa-2048')) {
+            const key = component.name;
+            if (!componentUsage.has(key)) {
+              componentUsage.set(key, {
+                component: component,
                 applications: new Set(),
                 services: [],
                 totalUsages: 0
               });
             }
             
-            libraryUsage.get(key).applications.add(app.name);
-            libraryUsage.get(key).services.push({
+            componentUsage.get(key).applications.add(app.name);
+            componentUsage.get(key).services.push({
               serviceName: service.name,
               applicationName: app.name,
-              usage: lib.functions || []
+              appId: app.id,
+              usage: component.functions || []
             });
-            libraryUsage.get(key).totalUsages++;
+            componentUsage.get(key).totalUsages++;
+          } else if (componentType === 'languages') {
+            const key = component.name || component.language;
+            if (!componentUsage.has(key)) {
+              componentUsage.set(key, {
+                component: component,
+                applications: new Set(),
+                services: [],
+                totalUsages: 0
+              });
+            }
+            
+            componentUsage.get(key).applications.add(app.name);
+            componentUsage.get(key).services.push({
+              serviceName: service.name,
+              applicationName: app.name,
+              appId: app.id,
+              usage: component.frameworks || []
+            });
+            componentUsage.get(key).totalUsages++;
           }
         });
       });
     });
     
-    // Convert to sorted array
-    const libraries = Array.from(libraryUsage.values())
+    const components = Array.from(componentUsage.values())
       .map(data => ({
-        ...data.library,
+        ...data.component,
         applicationCount: data.applications.size,
         serviceCount: data.services.length,
         applications: Array.from(data.applications),
@@ -159,7 +184,8 @@ const CBOMViewer = () => {
     
     return {
       query,
-      libraries,
+      componentType,
+      components,
       totalApplications: cbomData.applications.length,
       totalServices: cbomData.applications.reduce((total, app) => total + app.services.length, 0)
     };
@@ -200,7 +226,6 @@ const CBOMViewer = () => {
   const getFilteredCBOMData = (): any => {
     if (!selectedService || !cbomData || !selectedApplication) return null;
     
-    // Create a compatible structure for the graph component
     return {
       application: {
         name: selectedService.name,
@@ -268,8 +293,9 @@ const CBOMViewer = () => {
             <TabsTrigger value="overview" disabled={!selectedService}>
               Overview
             </TabsTrigger>
-            <TabsTrigger value="libraries-analysis" disabled={!librariesDrillDownData}>
-              Libraries
+            <TabsTrigger value="components-analysis" disabled={!componentsDrillDownData}>
+              <Package className="h-4 w-4 mr-2" />
+              Components
             </TabsTrigger>
             <TabsTrigger value="crypto-materials-results" disabled={!cryptoMaterialsData}>
               <Key className="h-4 w-4 mr-2" />
@@ -289,13 +315,41 @@ const CBOMViewer = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">
-                    Analyze cryptographic capabilities, algorithms, and libraries across your applications and services.
+                    Analyze cryptographic capabilities, algorithms, libraries, and programming languages across your applications.
                   </p>
-                  <div className="text-sm text-gray-500">
-                    • Find deprecated algorithms
-                    • Analyze library usage across applications
-                    • Risk assessment and compliance
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <div>• Find deprecated algorithms and libraries</div>
+                    <div>• Analyze component usage across applications</div>
+                    <div>• Programming language distribution</div>
+                    <div>• Risk assessment and compliance</div>
                   </div>
+                  
+                  {searchMode === 'cbom' && (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Filter className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">Analysis Type</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Toggle 
+                          pressed={cbomAnalysisType === 'libraries'}
+                          onPressedChange={() => setCbomAnalysisType('libraries')}
+                          className="flex items-center gap-2"
+                        >
+                          <Package className="h-4 w-4" />
+                          Libraries
+                        </Toggle>
+                        <Toggle 
+                          pressed={cbomAnalysisType === 'languages'}
+                          onPressedChange={() => setCbomAnalysisType('languages')}
+                          className="flex items-center gap-2"
+                        >
+                          <Code className="h-4 w-4" />
+                          Languages
+                        </Toggle>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -309,12 +363,13 @@ const CBOMViewer = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">
-                    Search and analyze certificates, keys, and other cryptographic materials across your infrastructure.
+                    Search and analyze certificates, keys, and cryptographic materials across hundreds of applications and platforms.
                   </p>
-                  <div className="text-sm text-gray-500">
-                    • Certificate expiration tracking
-                    • Key strength analysis
-                    • Usage patterns and relationships
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <div>• Certificate expiration tracking</div>
+                    <div>• Key strength and usage analysis</div>
+                    <div>• Cross-platform material relationships</div>
+                    <div>• Compliance and security monitoring</div>
                   </div>
                 </CardContent>
               </Card>
@@ -325,6 +380,7 @@ const CBOMViewer = () => {
                 onSearch={handleNaturalLanguageSearch}
                 onGitHubScan={handleGitHubScan}
                 loading={loading}
+                analysisType={cbomAnalysisType}
               />
             )}
 
@@ -336,39 +392,15 @@ const CBOMViewer = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="libraries-analysis" className="space-y-6">
-            {librariesDrillDownData && (
-              <LibrariesDrillDown data={librariesDrillDownData} />
+          <TabsContent value="components-analysis" className="space-y-6">
+            {componentsDrillDownData && (
+              <ComponentsDrillDown data={componentsDrillDownData} />
             )}
           </TabsContent>
 
           <TabsContent value="crypto-materials-results" className="space-y-6">
             {cryptoMaterialsData && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Crypto Materials Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{cryptoMaterialsData.certificates.length}</div>
-                        <div className="text-sm text-gray-500">Certificates</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">{cryptoMaterialsData.keys.length}</div>
-                        <div className="text-sm text-gray-500">Keys</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">{cryptoMaterialsData.relationships.length}</div>
-                        <div className="text-sm text-gray-500">Relationships</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <CryptoMaterialsKnowledgeGraph data={cryptoMaterialsData} />
-              </div>
+              <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
             )}
           </TabsContent>
 

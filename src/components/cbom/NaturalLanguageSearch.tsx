@@ -4,22 +4,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Search, Sparkles, GitBranch, Clock, Lightbulb } from 'lucide-react';
+import { Search, Sparkles, GitBranch, Clock, Lightbulb, Package, Code } from 'lucide-react';
 
 interface NaturalLanguageSearchProps {
   onSearch: (query: string) => void;
   onGitHubScan: (url: string) => void;
   loading: boolean;
+  analysisType?: 'libraries' | 'languages';
 }
 
-const EXAMPLE_QUERIES = [
-  "Show me all services using deprecated encryption algorithms",
-  "Find high-risk services in the payment processing module",
-  "List services using RSA-2048 with medium or high risk levels",
-  "Show services that use both AES-256 and SHA-256",
-  "Find all services with OpenSSL vulnerabilities",
-  "Display services using legacy crypto libraries",
-];
+const EXAMPLE_QUERIES = {
+  libraries: [
+    "Show me all services using deprecated encryption libraries",
+    "Find high-risk libraries in the payment processing module",
+    "List libraries using RSA-2048 with medium or high risk levels",
+    "Show libraries that use both AES-256 and SHA-256",
+    "Find all services with OpenSSL vulnerabilities",
+    "Display libraries used across the most applications",
+  ],
+  languages: [
+    "Show me all programming languages using crypto functions",
+    "Find Python services with encryption capabilities",
+    "List Java applications with cryptographic libraries",
+    "Show Node.js services using deprecated crypto",
+    "Find all C++ services with custom encryption",
+    "Display language distribution across applications",
+  ]
+};
 
 const EXAMPLE_GITHUB_URLS = [
   "https://github.com/username/repo-name",
@@ -30,7 +41,8 @@ const EXAMPLE_GITHUB_URLS = [
 export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
   onSearch,
   onGitHubScan,
-  loading
+  loading,
+  analysisType = 'libraries'
 }) => {
   const [query, setQuery] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
@@ -54,15 +66,23 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
     setQuery(example);
   };
 
+  const currentExamples = EXAMPLE_QUERIES[analysisType];
+  const analysisTypeLabel = analysisType === 'libraries' ? 'Libraries' : 'Programming Languages';
+  const analysisIcon = analysisType === 'libraries' ? Package : Code;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
           AI-Powered CBOM Analysis
+          <Badge variant="outline" className="ml-2 flex items-center gap-1">
+            {React.createElement(analysisIcon, { className: "h-3 w-3" })}
+            {analysisTypeLabel}
+          </Badge>
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Ask natural language questions about your cryptographic dependencies or scan a GitHub repository
+          Ask natural language questions about your cryptographic {analysisType} or scan a GitHub repository
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -71,7 +91,7 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-medium">Natural Language Query</label>
             <Textarea
-              placeholder="e.g., Show me all services using deprecated algorithms with high risk..."
+              placeholder={`e.g., Show me all ${analysisType} using deprecated algorithms with high risk...`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               rows={3}
@@ -157,10 +177,10 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <Lightbulb className="h-4 w-4" />
-            Example Queries
+            Example Queries for {analysisTypeLabel}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {EXAMPLE_QUERIES.map((example, index) => (
+            {currentExamples.map((example, index) => (
               <Badge
                 key={index}
                 variant="outline"
