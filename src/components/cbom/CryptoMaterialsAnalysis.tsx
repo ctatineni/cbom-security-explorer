@@ -8,38 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, CheckCircle, Clock, Eye, Filter, Search, FileKey, Key, Shield, Building, Layers, Calendar, Download } from 'lucide-react';
 import { CryptoMaterialsKnowledgeGraph } from './CryptoMaterialsKnowledgeGraph';
-
-interface Certificate {
-  id: string;
-  commonName: string;
-  appId: string;
-  serviceName: string;
-  type: string;
-  issuer: string;
-  status: string;
-  riskLevel: string;
-  expiryDate: string;
-  applications?: string[];
-}
-
-interface KeyMaterial {
-  id: string;
-  keyId: string;
-  appId: string;
-  serviceName: string;
-  type: string;
-  keyLength: string;
-  keySource?: string;
-  status: string;
-  riskLevel: string;
-  createdDate: string;
-  applications?: string[];
-}
-
-interface CryptoMaterialsData {
-  certificates: Certificate[];
-  keys: KeyMaterial[];
-}
+import { CryptoMaterialsData, Certificate, CryptoKey } from '@/data/mockCryptoMaterialsData';
 
 interface CryptoMaterialsAnalysisProps {
   data: CryptoMaterialsData;
@@ -57,20 +26,76 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
   const filterOptions = useMemo(() => {
     const allMaterials = [...data.certificates, ...data.keys];
     
+    // Helper function to get valid string values
+    const getValidValues = (values: (string | undefined)[]): string[] => {
+      return values.filter((value): value is string => 
+        value !== undefined && value !== null && value.trim() !== ''
+      );
+    };
+
+    // Map certificates to get status and risk level
+    const certStatuses = data.certificates.map(cert => cert.isExpired ? 'expired' : 'active');
+    const certRiskLevels = data.certificates.map(cert => {
+      if (cert.isExpired || cert.daysUntilExpiry < 30) return 'high';
+      if (cert.daysUntilExpiry < 90) return 'medium';
+      return 'low';
+    });
+
+    // Map keys to get status and risk level
+    const keyStatuses = data.keys.map(key => key.isActive ? 'active' : 'inactive');
+    const keyRiskLevels = data.keys.map(key => {
+      if (!key.isActive || key.keySize < 2048) return 'high';
+      if (key.keySize < 4096) return 'medium';
+      return 'low';
+    });
+    
     return {
-      statuses: [...new Set(allMaterials.map(item => item.status))].filter(status => status && status.trim() !== ''),
-      types: [...new Set([...data.certificates.map(cert => cert.type), ...data.keys.map(key => key.type)])].filter(type => type && type.trim() !== ''),
-      riskLevels: [...new Set(allMaterials.map(item => item.riskLevel))].filter(risk => risk && risk.trim() !== ''),
+      statuses: [...new Set([...certStatuses, ...keyStatuses])],
+      types: [...new Set([
+        ...getValidValues(data.certificates.map(cert => cert.certificateType)),
+        ...getValidValues(data.keys.map(key => key.type))
+      ])],
+      riskLevels: [...new Set([...certRiskLevels, ...keyRiskLevels])],
       issuers: [...new Set([
-        ...data.certificates.map(cert => cert.issuer),
-        ...data.keys.map(key => key.keySource || 'Unknown')
-      ])].filter(issuer => issuer && issuer.trim() !== ''),
-      applications: [...new Set(allMaterials.flatMap(item => item.applications || []))].filter(app => app && app.trim() !== '')
+        ...getValidValues(data.certificates.map(cert => cert.issuer)),
+        ...getValidValues(data.keys.map(key => key.location))
+      ])],
+      applications: [...new Set([
+        ...data.certificates.flatMap(cert => cert.applications),
+        ...data.keys.flatMap(key => key.applications)
+      ])]
     };
   }, [data]);
 
+  const getTransformedCertificates = () => {
+    return data.certificates.map(cert => ({
+      ...cert,
+      appId: `app-${Math.floor(Math.random() * 20).toString().padStart(3, '0')}`,
+      serviceName: cert.services[0] || 'Unknown Service',
+      type: cert.certificateType,
+      status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'active'),
+      riskLevel: cert.isExpired || cert.daysUntilExpiry < 30 ? 'high' : (cert.daysUntilExpiry < 90 ? 'medium' : 'low'),
+      expiryDate: cert.validTo
+    }));
+  };
+
+  const getTransformedKeys = () => {
+    return data.keys.map(key => ({
+      ...key,
+      appId: `app-${Math.floor(Math.random() * 20).toString().padStart(3, '0')}`,
+      serviceName: key.services[0] || 'Unknown Service',
+      keyId: key.id,
+      keyLength: `${key.keySize}`,
+      keySource: key.location,
+      status: key.isActive ? 'active' : 'inactive',
+      riskLevel: !key.isActive || key.keySize < 2048 ? 'high' : (key.keySize < 4096 ? 'medium' : 'low'),
+      createdDate: key.createdDate
+    }));
+  };
+
   const filteredCertificates = useMemo(() => {
-    return data.certificates.filter(cert => {
+    const transformedCerts = getTransformedCertificates();
+    return transformedCerts.filter(cert => {
       const matchesSearch = !searchFilter || 
         cert.commonName.toLowerCase().includes(searchFilter.toLowerCase()) ||
         cert.issuer.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -89,7 +114,8 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
   }, [data.certificates, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter]);
 
   const filteredKeys = useMemo(() => {
-    return data.keys.filter(key => {
+    const transformedKeys = getTransformedKeys();
+    return transformedKeys.filter(key => {
       const matchesSearch = !searchFilter || 
         key.keyId.toLowerCase().includes(searchFilter.toLowerCase()) ||
         (key.keySource && key.keySource.toLowerCase().includes(searchFilter.toLowerCase())) ||
@@ -115,6 +141,11 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
     setIssuerFilter('all');
     setApplicationFilter('all');
   };
+
+  // Calculate stats using transformed data
+  const transformedCerts = getTransformedCertificates();
+  const transformedKeys = getTransformedKeys();
+  const allMaterials = [...transformedCerts, ...transformedKeys];
 
   return (
     <div className="space-y-6">
@@ -150,7 +181,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <div>
                 <div className="text-2xl font-bold text-red-600">
-                  {[...data.certificates, ...data.keys].filter(item => item.riskLevel === 'high').length}
+                  {allMaterials.filter(item => item.riskLevel === 'high').length}
                 </div>
                 <div className="text-sm text-gray-500">High Risk</div>
               </div>
@@ -164,7 +195,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
               <Clock className="h-5 w-5 text-yellow-600" />
               <div>
                 <div className="text-2xl font-bold text-yellow-600">
-                  {data.certificates.filter(cert => cert.status === 'expiring').length}
+                  {transformedCerts.filter(cert => cert.status === 'expiring').length}
                 </div>
                 <div className="text-sm text-gray-500">Expiring Soon</div>
               </div>
@@ -223,6 +254,10 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  
+                  
+                  
                   
                   <div>
                     <label className="text-sm font-medium mb-2 block">Type</label>
@@ -368,6 +403,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
               {/* Advanced Filters - similar structure as certificates */}
               <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  
                   <div>
                     <label className="text-sm font-medium mb-2 block">Search</label>
                     <div className="relative">
@@ -540,7 +576,8 @@ const getStatusBadge = (status: string) => {
     active: { variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
     expiring: { variant: 'destructive' as const, icon: Clock, color: 'text-yellow-600' },
     expired: { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' },
-    revoked: { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' }
+    revoked: { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' },
+    inactive: { variant: 'secondary' as const, icon: AlertTriangle, color: 'text-gray-600' }
   };
   
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
