@@ -5,78 +5,73 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Search, ArrowUpDown, Folder, Eye, Shield } from 'lucide-react';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Search, ArrowUpDown, Folder, Eye, Calendar, Shield } from 'lucide-react';
 import { Certificate } from '@/data/mockCryptoMaterialsData';
-import { FixedSizeList as List } from 'react-window';
 
 interface CertificatesTabProps {
   certificates: Certificate[];
+  onFiltersChange?: (filters: any) => void;
 }
 
 interface CertificateRow {
   id: string;
   appId: string;
   serviceName: string;
-  name: string;
-  paths: string[];
-  size: string;
-  issuer: string;
   subject: string;
+  issuer: string;
+  paths: string[];
   source: string;
-  riskLevel: string;
   status: string;
-  expiry: string;
+  expiryDate: string;
   daysUntilExpiry: number;
   applications: string[];
-  certType: string;
+  isExpired: boolean;
 }
 
-export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }) => {
+const ITEMS_PER_PAGE = 50;
+
+export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, onFiltersChange }) => {
   const [searchFilter, setSearchFilter] = useState('');
   const [searchField, setSearchField] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [certTypeFilter, setCertTypeFilter] = useState('all');
-  const [riskLevelFilter, setRiskLevelFilter] = useState('all');
-  const [issuerFilter, setIssuerFilter] = useState('all');
-  const [subjectFilter, setSubjectFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [applicationFilter, setApplicationFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
+  const [issuerFilter, setIssuerFilter] = useState('all');
   const [sortField, setSortField] = useState<keyof CertificateRow>('appId');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const certificateRows = useMemo((): CertificateRow[] => {
     return certificates.map((cert, index) => {
       const paths = [
-        `/opt/certificates/${cert.commonName.toLowerCase().replace(/\s+/g, '_')}.crt`,
-        `/etc/ssl/certs/${cert.commonName.toLowerCase().replace(/\s+/g, '_')}.pem`
+        `/etc/ssl/certs/${cert.subject.toLowerCase().replace(/[\s=,]/g, '_')}.crt`,
+        `/var/lib/ssl/${cert.subject.toLowerCase().replace(/[\s=,]/g, '_')}.pem`
       ];
       
-      if (cert.certificateType === 'SSL/TLS') {
-        paths.push('/var/www/ssl/', '/nginx/ssl/');
-      } else if (cert.certificateType === 'Code Signing') {
-        paths.push('/usr/local/share/ca-certificates/');
+      if (cert.issuer.includes('Let\'s Encrypt')) {
+        paths.push('/etc/letsencrypt/live/', '/opt/letsencrypt/');
+      } else if (cert.issuer.includes('Internal')) {
+        paths.push('/etc/internal-ca/', '/opt/ca-certs/');
       }
 
       return {
         id: cert.id,
         appId: `APP-${String(index + 1).padStart(3, '0')}`,
         serviceName: cert.services && cert.services.length > 0 ? cert.services[0] : 'Unknown Service',
-        name: cert.commonName,
-        paths: paths.slice(0, Math.floor(Math.random() * 3) + 1),
-        size: `${cert.keySize} bits`,
+        subject: cert.subject,
         issuer: cert.issuer,
-        subject: cert.commonName,
+        paths: paths.slice(0, Math.floor(Math.random() * 3) + 1),
         source: cert.issuer.includes('Let\'s Encrypt') ? 'Let\'s Encrypt' : 
                 cert.issuer.includes('DigiCert') ? 'DigiCert' : 
-                cert.issuer.includes('Verisign') ? 'Verisign' : 'Internal CA',
-        status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'active'),
-        riskLevel: cert.isExpired || cert.daysUntilExpiry < 30 ? 'high' : (cert.daysUntilExpiry < 90 ? 'medium' : 'low'),
-        expiry: cert.validTo,
+                cert.issuer.includes('Internal') ? 'Internal CA' : 'External CA',
+        status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'valid'),
+        expiryDate: cert.expiryDate,
         daysUntilExpiry: cert.daysUntilExpiry,
         applications: cert.applications || [],
-        certType: cert.certificateType
+        isExpired: cert.isExpired
       };
     });
   }, [certificates]);
@@ -88,27 +83,21 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
 
     const filtered = certificateRows.filter(row => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (certTypeFilter !== 'all' && row.certType !== certTypeFilter) return false;
-      if (riskLevelFilter !== 'all' && row.riskLevel !== riskLevelFilter) return false;
-      if (issuerFilter !== 'all' && row.issuer !== issuerFilter) return false;
-      if (subjectFilter !== 'all' && row.subject !== subjectFilter) return false;
       if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
       if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
       if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
+      if (issuerFilter !== 'all' && !row.issuer.includes(issuerFilter)) return false;
       return true;
     });
 
     return {
       statuses: getUniqueValues(filtered.map(row => row.status)),
-      certTypes: getUniqueValues(filtered.map(row => row.certType)),
-      riskLevels: getUniqueValues(filtered.map(row => row.riskLevel)),
-      issuers: getUniqueValues(filtered.map(row => row.issuer)),
-      subjects: getUniqueValues(filtered.map(row => row.subject)),
       sources: getUniqueValues(filtered.map(row => row.source)),
       applications: getUniqueValues(filtered.flatMap(row => row.applications)),
-      services: getUniqueValues(filtered.map(row => row.serviceName))
+      services: getUniqueValues(filtered.map(row => row.serviceName)),
+      issuers: getUniqueValues(filtered.map(row => row.issuer))
     };
-  }, [certificateRows, statusFilter, certTypeFilter, riskLevelFilter, issuerFilter, subjectFilter, sourceFilter, applicationFilter, serviceFilter]);
+  }, [certificateRows, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter]);
 
   const filteredAndSortedRows = useMemo(() => {
     let filtered = certificateRows.filter(row => {
@@ -128,15 +117,26 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
       }
     }).filter(row => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (certTypeFilter !== 'all' && row.certType !== certTypeFilter) return false;
-      if (riskLevelFilter !== 'all' && row.riskLevel !== riskLevelFilter) return false;
-      if (issuerFilter !== 'all' && row.issuer !== issuerFilter) return false;
-      if (subjectFilter !== 'all' && row.subject !== subjectFilter) return false;
       if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
       if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
       if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
+      if (issuerFilter !== 'all' && !row.issuer.includes(issuerFilter)) return false;
       return true;
     });
+
+    // Notify parent component about filter changes
+    if (onFiltersChange) {
+      const currentFilters = {
+        search: searchFilter,
+        searchField,
+        status: statusFilter,
+        source: sourceFilter,
+        application: applicationFilter,
+        service: serviceFilter,
+        issuer: issuerFilter
+      };
+      onFiltersChange(currentFilters);
+    }
 
     filtered.sort((a, b) => {
       const aValue = a[sortField];
@@ -158,19 +158,21 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
     });
 
     return filtered;
-  }, [certificateRows, searchFilter, searchField, statusFilter, certTypeFilter, riskLevelFilter, issuerFilter, subjectFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection]);
+  }, [certificateRows, searchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, sortField, sortDirection, onFiltersChange]);
+
+  const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const clearFilters = () => {
     setSearchFilter('');
     setSearchField('all');
     setStatusFilter('all');
-    setCertTypeFilter('all');
-    setRiskLevelFilter('all');
-    setIssuerFilter('all');
-    setSubjectFilter('all');
     setSourceFilter('all');
     setApplicationFilter('all');
     setServiceFilter('all');
+    setIssuerFilter('all');
+    setCurrentPage(1);
   };
 
   const handleSort = (field: keyof CertificateRow) => {
@@ -223,19 +225,29 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
     );
   };
 
-  const getRiskBadge = (riskLevel: string) => {
-    const riskConfig = {
-      low: { variant: 'secondary' as const, color: 'text-green-600' },
-      medium: { variant: 'default' as const, color: 'text-yellow-600' },
-      high: { variant: 'destructive' as const, color: 'text-red-600' }
-    };
+  const getStatusBadge = (status: string, daysUntilExpiry: number) => {
+    if (status === 'expired') {
+      return (
+        <Badge variant="destructive" className="text-xs">
+          <Shield className="h-3 w-3 mr-1" />
+          Expired
+        </Badge>
+      );
+    }
     
-    const config = riskConfig[riskLevel as keyof typeof riskConfig] || riskConfig.low;
+    if (status === 'expiring') {
+      return (
+        <Badge className="text-xs bg-yellow-500">
+          <Calendar className="h-3 w-3 mr-1" />
+          Expiring ({daysUntilExpiry}d)
+        </Badge>
+      );
+    }
     
     return (
-      <Badge variant={config.variant} className="text-xs">
-        <Shield className={`h-3 w-3 mr-1 ${config.color}`} />
-        {riskLevel}
+      <Badge variant="secondary" className="text-xs">
+        <Shield className="h-3 w-3 mr-1" />
+        Valid ({daysUntilExpiry}d)
       </Badge>
     );
   };
@@ -244,7 +256,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
     <div className="space-y-4">
       {/* Enhanced Filters */}
       <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Search Field</label>
             <Select value={searchField} onValueChange={setSearchField}>
@@ -255,9 +267,8 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
                 <SelectItem value="all">All Fields</SelectItem>
                 <SelectItem value="appId">App ID</SelectItem>
                 <SelectItem value="serviceName">Service Name</SelectItem>
-                <SelectItem value="name">Certificate Name</SelectItem>
-                <SelectItem value="issuer">Issuer</SelectItem>
                 <SelectItem value="subject">Subject</SelectItem>
+                <SelectItem value="issuer">Issuer</SelectItem>
                 <SelectItem value="source">Source</SelectItem>
               </SelectContent>
             </Select>
@@ -307,51 +318,6 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
           </div>
           
           <div>
-            <label className="text-sm font-medium mb-2 block">Certificate Type</label>
-            <Select value={certTypeFilter} onValueChange={setCertTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {filterOptions.certTypes.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-2 block">Risk Level</label>
-            <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Risk Levels" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Risk Levels</SelectItem>
-                {filterOptions.riskLevels.map(risk => (
-                  <SelectItem key={risk} value={risk}>{risk}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-2 block">Issuer</label>
-            <Select value={issuerFilter} onValueChange={setIssuerFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Issuers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Issuers</SelectItem>
-                {filterOptions.issuers.map(issuer => (
-                  <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
             <label className="text-sm font-medium mb-2 block">Source</label>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger>
@@ -367,15 +333,15 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
           </div>
           
           <div>
-            <label className="text-sm font-medium mb-2 block">Subject</label>
-            <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+            <label className="text-sm font-medium mb-2 block">Issuer</label>
+            <Select value={issuerFilter} onValueChange={setIssuerFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="All Subjects" />
+                <SelectValue placeholder="All Issuers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {filterOptions.subjects.map(subject => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                <SelectItem value="all">All Issuers</SelectItem>
+                {filterOptions.issuers.map(issuer => (
+                  <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -399,7 +365,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
         
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            Showing {filteredAndSortedRows.length} of {certificateRows.length} certificates
+            Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} certificates
           </div>
           <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
             Clear Filters
@@ -424,17 +390,10 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
                   {getSortIcon('serviceName')}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('subject')}>
                 <div className="flex items-center gap-2">
-                  Certificate Name
-                  {getSortIcon('name')}
-                </div>
-              </TableHead>
-              <TableHead>Paths</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('size')}>
-                <div className="flex items-center gap-2">
-                  Key Size
-                  {getSortIcon('size')}
+                  Subject
+                  {getSortIcon('subject')}
                 </div>
               </TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('issuer')}>
@@ -443,31 +402,26 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
                   {getSortIcon('issuer')}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('subject')}>
-                <div className="flex items-center gap-2">
-                  Subject
-                  {getSortIcon('subject')}
-                </div>
-              </TableHead>
+              <TableHead>Paths</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('source')}>
                 <div className="flex items-center gap-2">
                   Source
                   {getSortIcon('source')}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('riskLevel')}>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
                 <div className="flex items-center gap-2">
-                  Risk
-                  {getSortIcon('riskLevel')}
+                  Status
+                  {getSortIcon('status')}
                 </div>
               </TableHead>
-              <TableHead>Expiry</TableHead>
+              <TableHead>Expiry Date</TableHead>
               <TableHead>Applications</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedRows.map((row) => (
+            {paginatedRows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-semibold">
                   <Badge variant="outline" className="text-xs font-mono">
@@ -475,16 +429,18 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">{row.serviceName}</TableCell>
-                <TableCell className="font-medium">{row.name}</TableCell>
+                <TableCell className="font-medium max-w-xs truncate" title={row.subject}>
+                  {row.subject}
+                </TableCell>
+                <TableCell className="max-w-xs truncate" title={row.issuer}>
+                  {row.issuer}
+                </TableCell>
                 <TableCell className="max-w-xs">
                   {renderPaths(row)}
                 </TableCell>
-                <TableCell>{row.size}</TableCell>
-                <TableCell className="max-w-xs truncate" title={row.issuer}>{row.issuer}</TableCell>
-                <TableCell className="max-w-xs truncate" title={row.subject}>{row.subject}</TableCell>
                 <TableCell>{row.source}</TableCell>
-                <TableCell>{getRiskBadge(row.riskLevel)}</TableCell>
-                <TableCell>{row.expiry}</TableCell>
+                <TableCell>{getStatusBadge(row.status, row.daysUntilExpiry)}</TableCell>
+                <TableCell>{row.expiryDate}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {row.applications?.slice(0, 2).map((app, index) => (
@@ -509,6 +465,42 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates }
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+            
+            {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              const pageNum = i + 1;
+              return (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(pageNum)}
+                    isActive={currentPage === pageNum}
+                    className="cursor-pointer"
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

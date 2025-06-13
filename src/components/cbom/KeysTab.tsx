@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Search, ArrowUpDown, Folder, Eye, Shield } from 'lucide-react';
 import { CryptoKey } from '@/data/mockCryptoMaterialsData';
 
 interface KeysTabProps {
   keys: CryptoKey[];
+  onFiltersChange?: (filters: any) => void;
 }
 
 interface KeyRow {
@@ -28,24 +30,27 @@ interface KeyRow {
   isActive: boolean;
 }
 
-export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
+const ITEMS_PER_PAGE = 50;
+
+export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
   const [searchFilter, setSearchFilter] = useState('');
   const [searchField, setSearchField] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [keyTypeFilter, setKeyTypeFilter] = useState('all');
-  const [riskLevelFilter, setRiskLevelFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [applicationFilter, setApplicationFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [sortField, setSortField] = useState<keyof KeyRow>('appId');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const keyRows = useMemo((): KeyRow[] => {
     return keys.map((key, index) => {
       const paths = [
         `/home/user/.ssh/${key.name.toLowerCase().replace(/\s+/g, '_')}`,
-        `/etc/keys/${key.name.toLowerCase().replace(/\s+/g, '_')}.key`
+        `/etc/keys/${key.name.toLowerCase().replace(/\s+/g, '_')}.key`,
+        `/var/lib/keys/${key.name.toLowerCase().replace(/\s+/g, '_')}.pem`
       ];
       
       if (key.type === 'RSA') {
@@ -80,7 +85,6 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
     const filtered = keyRows.filter(row => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (keyTypeFilter !== 'all' && row.keyType !== keyTypeFilter) return false;
-      if (riskLevelFilter !== 'all' && row.riskLevel !== riskLevelFilter) return false;
       if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
       if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
       if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
@@ -90,12 +94,11 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
     return {
       statuses: getUniqueValues(filtered.map(row => row.status)),
       keyTypes: getUniqueValues(filtered.map(row => row.keyType)),
-      riskLevels: getUniqueValues(filtered.map(row => row.riskLevel)),
       sources: getUniqueValues(filtered.map(row => row.source)),
       applications: getUniqueValues(filtered.flatMap(row => row.applications)),
       services: getUniqueValues(filtered.map(row => row.serviceName))
     };
-  }, [keyRows, statusFilter, keyTypeFilter, riskLevelFilter, sourceFilter, applicationFilter, serviceFilter]);
+  }, [keyRows, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter]);
 
   const filteredAndSortedRows = useMemo(() => {
     let filtered = keyRows.filter(row => {
@@ -116,12 +119,25 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
     }).filter(row => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (keyTypeFilter !== 'all' && row.keyType !== keyTypeFilter) return false;
-      if (riskLevelFilter !== 'all' && row.riskLevel !== riskLevelFilter) return false;
       if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
       if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
       if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
       return true;
     });
+
+    // Notify parent component about filter changes
+    if (onFiltersChange) {
+      const currentFilters = {
+        search: searchFilter,
+        searchField,
+        status: statusFilter,
+        keyType: keyTypeFilter,
+        source: sourceFilter,
+        application: applicationFilter,
+        service: serviceFilter
+      };
+      onFiltersChange(currentFilters);
+    }
 
     filtered.sort((a, b) => {
       const aValue = a[sortField];
@@ -143,17 +159,21 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
     });
 
     return filtered;
-  }, [keyRows, searchFilter, searchField, statusFilter, keyTypeFilter, riskLevelFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection]);
+  }, [keyRows, searchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection, onFiltersChange]);
+
+  const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const clearFilters = () => {
     setSearchFilter('');
     setSearchField('all');
     setStatusFilter('all');
     setKeyTypeFilter('all');
-    setRiskLevelFilter('all');
     setSourceFilter('all');
     setApplicationFilter('all');
     setServiceFilter('all');
+    setCurrentPage(1);
   };
 
   const handleSort = (field: keyof KeyRow) => {
@@ -227,7 +247,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
     <div className="space-y-4">
       {/* Enhanced Filters */}
       <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Search Field</label>
             <Select value={searchField} onValueChange={setSearchField}>
@@ -304,21 +324,6 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
           </div>
           
           <div>
-            <label className="text-sm font-medium mb-2 block">Risk Level</label>
-            <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Risk Levels" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Risk Levels</SelectItem>
-                {filterOptions.riskLevels.map(risk => (
-                  <SelectItem key={risk} value={risk}>{risk}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
             <label className="text-sm font-medium mb-2 block">Source</label>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger>
@@ -351,7 +356,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
         
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            Showing {filteredAndSortedRows.length} of {keyRows.length} keys
+            Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} keys
           </div>
           <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
             Clear Filters
@@ -401,10 +406,10 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
                   {getSortIcon('source')}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('riskLevel')}>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
                 <div className="flex items-center gap-2">
-                  Risk
-                  {getSortIcon('riskLevel')}
+                  Status
+                  {getSortIcon('status')}
                 </div>
               </TableHead>
               <TableHead>Created</TableHead>
@@ -413,7 +418,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedRows.map((row) => (
+            {paginatedRows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-semibold">
                   <Badge variant="outline" className="text-xs font-mono">
@@ -432,7 +437,11 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
                 </TableCell>
                 <TableCell>{row.size}</TableCell>
                 <TableCell>{row.source}</TableCell>
-                <TableCell>{getRiskBadge(row.riskLevel)}</TableCell>
+                <TableCell>
+                  <Badge variant={row.status === 'active' ? 'secondary' : 'destructive'} className="text-xs">
+                    {row.status}
+                  </Badge>
+                </TableCell>
                 <TableCell>{row.createdDate}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
@@ -458,6 +467,42 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys }) => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+            
+            {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              const pageNum = i + 1;
+              return (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(pageNum)}
+                    isActive={currentPage === pageNum}
+                    className="cursor-pointer"
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

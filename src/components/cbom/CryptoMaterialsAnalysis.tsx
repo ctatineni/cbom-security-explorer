@@ -1,13 +1,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, CheckCircle, Clock, Eye, Filter, Search, FileKey, Key, Shield, ArrowUpDown, Folder, BarChart3 } from 'lucide-react';
-import { CryptoMaterialsData, Certificate, CryptoKey } from '@/data/mockCryptoMaterialsData';
+import { AlertTriangle, CheckCircle, Clock, FileKey, Key, Shield, BarChart3 } from 'lucide-react';
+import { CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 import { CertificatesTab } from './CertificatesTab';
 import { KeysTab } from './KeysTab';
 import { CryptoMaterialsMetrics } from './CryptoMaterialsMetrics';
@@ -23,10 +20,11 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
   streamingData = false, 
   onDataUpdate 
 }) => {
-  const [activeTab, setActiveTab] = useState(() => {
-    // Default to certificates if available, otherwise keys
-    return data.certificates.length > 0 ? 'certificates' : 'keys';
-  });
+  const [activeTab, setActiveTab] = useState('metrics'); // Default to metrics
+  const [activeFilters, setActiveFilters] = useState<{
+    certificates?: any;
+    keys?: any;
+  }>({});
 
   // Handle streaming data updates
   useEffect(() => {
@@ -41,6 +39,20 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
 
   const hasCertificates = data.certificates.length > 0;
   const hasKeys = data.keys.length > 0;
+
+  const handleCertificateFiltersChange = (filters: any) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      certificates: filters
+    }));
+  };
+
+  const handleKeyFiltersChange = (filters: any) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      keys: filters
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -115,7 +127,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Cryptographic Materials Registry
+            Cryptographic Assets Registry
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -123,7 +135,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="metrics">
                 <BarChart3 className="h-4 w-4 mr-2" />
-                Metrics
+                Metrics & Impact
               </TabsTrigger>
               {hasCertificates && (
                 <TabsTrigger value="certificates">
@@ -142,18 +154,24 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
             </TabsList>
 
             <TabsContent value="metrics" className="space-y-4">
-              <CryptoMaterialsMetrics data={data} />
+              <CryptoMaterialsMetrics data={data} activeFilters={activeFilters} />
             </TabsContent>
 
             {hasCertificates && (
               <TabsContent value="certificates" className="space-y-4">
-                <CertificatesTab certificates={data.certificates} />
+                <CertificatesTab 
+                  certificates={data.certificates} 
+                  onFiltersChange={handleCertificateFiltersChange}
+                />
               </TabsContent>
             )}
 
             {hasKeys && (
               <TabsContent value="keys" className="space-y-4">
-                <KeysTab keys={data.keys} />
+                <KeysTab 
+                  keys={data.keys}
+                  onFiltersChange={handleKeyFiltersChange}
+                />
               </TabsContent>
             )}
           </Tabs>
