@@ -17,6 +17,8 @@ import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { ApplicationSelector } from '@/components/cbom/ApplicationSelector';
 import { ComponentsDrillDown } from '@/components/cbom/ComponentsDrillDown';
 import { CryptoMaterialsAnalysis } from '@/components/cbom/CryptoMaterialsAnalysis';
+import { SearchSummary } from '@/components/cbom/SearchSummary';
+import { TabNavigationHelper } from '@/components/cbom/TabNavigationHelper';
 import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMData';
 import { mockCryptoMaterialsData, CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +43,7 @@ const CBOMViewer = () => {
   const [showServiceDetails, setShowServiceDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('search-selection');
   const [componentsDrillDownData, setComponentsDrillDownData] = useState(null);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
   
   const [dataSources] = useState<DataSource[]>([
     {
@@ -71,11 +74,11 @@ const CBOMViewer = () => {
 
   const handleNaturalLanguageSearch = async (query: string) => {
     setLoading(true);
+    setLastSearchQuery(query);
     
     // Simulate search - always load mock data first
     setTimeout(() => {
       setCbomData(mockCBOMData);
-      setActiveTab('applications');
       setLoading(false);
       
       toast({
@@ -96,13 +99,16 @@ const CBOMViewer = () => {
         
         const combinedData = {
           query,
-          componentType: 'libraries' as const, // Keep the expected type
-          components: allComponents, // Use the expected property name
+          componentType: 'libraries' as const,
+          components: allComponents,
           totalApplications: mockCBOMData.applications.length,
           totalServices: mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)
         };
         
         setComponentsDrillDownData(combinedData);
+        
+        // Auto-navigate to applications tab after search completion
+        setActiveTab('applications');
         
         const totalComponents = allComponents.length;
         toast({
@@ -115,6 +121,7 @@ const CBOMViewer = () => {
 
   const handleCryptoMaterialsSearch = async (query: string) => {
     setLoading(true);
+    setLastSearchQuery(query);
     
     setTimeout(() => {
       setCryptoMaterialsData(mockCryptoMaterialsData);
@@ -291,37 +298,73 @@ const CBOMViewer = () => {
     return items;
   };
 
+  const hasDataAvailable = cbomData || cryptoMaterialsData;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <CBOMHeader />
       
       <div className="container mx-auto p-6">
+        {/* Show search summary and navigation helper when data is available */}
+        {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
+          <div className="space-y-4 mb-6">
+            <SearchSummary
+              query={lastSearchQuery}
+              totalApplications={cbomData?.applications.length || 0}
+              totalComponents={componentsDrillDownData?.components.length || 0}
+              onNavigateToApplications={() => setActiveTab('applications')}
+              onNavigateToComponents={() => setActiveTab('components-analysis')}
+            />
+            
+            <TabNavigationHelper
+              activeTab={activeTab}
+              hasApplicationsData={!!cbomData}
+              hasComponentsData={!!componentsDrillDownData}
+              hasCryptoData={!!cryptoMaterialsData}
+              selectedApplication={selectedApplication}
+              selectedService={selectedService}
+              onTabChange={setActiveTab}
+            />
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="search-selection">
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </TabsTrigger>
-            <TabsTrigger value="applications" disabled={!cbomData}>
-              <Building className="h-4 w-4 mr-2" />
-              Applications
-            </TabsTrigger>
-            <TabsTrigger value="services" disabled={!selectedApplication}>
-              <Layers className="h-4 w-4 mr-2" />
-              Services
-            </TabsTrigger>
-            <TabsTrigger value="overview" disabled={!selectedService}>
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="components-analysis" disabled={!componentsDrillDownData}>
-              <Package className="h-4 w-4 mr-2" />
-              Components
-            </TabsTrigger>
-            <TabsTrigger value="crypto-materials-results" disabled={!cryptoMaterialsData}>
-              <Key className="h-4 w-4 mr-2" />
-              Materials
-            </TabsTrigger>
-          </TabsList>
+          {/* Only show tab list when we have data or are on search */}
+          {(hasDataAvailable || activeTab === 'search-selection') && (
+            <TabsList className={`grid w-full ${hasDataAvailable ? 'grid-cols-6' : 'grid-cols-1'}`}>
+              <TabsTrigger value="search-selection">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </TabsTrigger>
+              {hasDataAvailable && (
+                <>
+                  <TabsTrigger value="applications" disabled={!cbomData}>
+                    <Building className="h-4 w-4 mr-2" />
+                    Applications
+                    {cbomData && <Badge variant="secondary" className="ml-2 text-xs">{cbomData.applications.length}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="services" disabled={!selectedApplication}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Services
+                    {selectedApplication && <Badge variant="secondary" className="ml-2 text-xs">{selectedApplication.services.length}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="overview" disabled={!selectedService}>
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="components-analysis" disabled={!componentsDrillDownData}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Components
+                    {componentsDrillDownData && <Badge variant="secondary" className="ml-2 text-xs">{componentsDrillDownData.components.length}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="crypto-materials-results" disabled={!cryptoMaterialsData}>
+                    <Key className="h-4 w-4 mr-2" />
+                    Materials
+                    {cryptoMaterialsData && <Badge variant="secondary" className="ml-2 text-xs">{cryptoMaterialsData.certificates.length + cryptoMaterialsData.keys.length}</Badge>}
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          )}
 
           <TabsContent value="search-selection" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
