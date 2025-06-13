@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,10 +77,10 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
       ];
       
       // Add additional paths based on certificate type
-      if (cert.certificateType === 'Root CA') {
-        paths.push('/usr/local/share/ca-certificates/');
-      } else if (cert.certificateType === 'SSL/TLS') {
+      if (cert.certificateType === 'SSL/TLS') {
         paths.push('/var/www/ssl/', '/nginx/ssl/');
+      } else if (cert.certificateType === 'Code Signing') {
+        paths.push('/usr/local/share/ca-certificates/');
       }
 
       materials.push({

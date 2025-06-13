@@ -279,6 +279,26 @@ const CBOMViewer = () => {
     setShowServiceDetails(true);
   };
 
+  // Navigation handlers
+  const handleBackToSearch = () => {
+    setActiveTab('search-selection');
+    setSelectedApplication(null);
+    setSelectedService(null);
+    setSelectedNode(null);
+  };
+
+  const handleBackToApplications = () => {
+    setActiveTab('applications');
+    setSelectedService(null);
+    setSelectedNode(null);
+  };
+
+  const handleBackToServices = () => {
+    setActiveTab('services');
+    setSelectedService(null);
+    setSelectedNode(null);
+  };
+
   const getFilteredCBOMData = (): any => {
     if (!selectedService || !cbomData || !selectedApplication) return null;
     
