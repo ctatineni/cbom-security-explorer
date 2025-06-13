@@ -65,10 +65,10 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-blue-600" />
-          AI-Powered CBOM Analysis
+          AI-Powered Cryptographic Analysis
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Ask natural language questions about your cryptographic libraries and languages or scan a GitHub repository
+          Ask natural language questions about your cryptographic assets, libraries, and languages or scan a GitHub repository
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -92,7 +92,7 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
               className="flex items-center gap-2"
             >
               <Search className="h-4 w-4" />
-              {loading ? 'Analyzing...' : 'Analyze'}
+              {loading ? 'Analyzing...' : 'Analyze Assets'}
             </Button>
             <Button 
               variant="outline"

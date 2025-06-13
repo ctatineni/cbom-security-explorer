@@ -86,15 +86,45 @@ const CBOMViewer = () => {
         description: `Found ${mockCBOMData.applications.length} applications with ${mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)} total services.`,
       });
 
-      // Always generate components drill down data for both libraries and languages
+      // Enhanced components drill down generation with better language detection
       setTimeout(() => {
         const librariesData = generateComponentsDrillDown(query, 'libraries');
         const languagesData = generateComponentsDrillDown(query, 'languages');
         
-        // Combine both libraries and languages into a single components array with backend flags
+        // Improved component filtering based on query intent
+        let filteredLibraries = librariesData?.components || [];
+        let filteredLanguages = languagesData?.components || [];
+        
+        // Enhanced language-specific filtering
+        if (query.toLowerCase().includes('java')) {
+          filteredLanguages = languagesData?.components.filter(comp => 
+            comp.name.toLowerCase().includes('java')) || [];
+          // Also filter libraries used by Java services
+          filteredLibraries = librariesData?.components.filter(comp =>
+            comp.services.some(service => 
+              mockCBOMData.applications.some(app => 
+                app.services.some(s => 
+                  s.name === service.serviceName && s.programmingLanguage?.toLowerCase().includes('java')
+                )
+              )
+            )
+          ) || [];
+        }
+        
+        if (query.toLowerCase().includes('python')) {
+          filteredLanguages = languagesData?.components.filter(comp => 
+            comp.name.toLowerCase().includes('python')) || [];
+        }
+        
+        if (query.toLowerCase().includes('node') || query.toLowerCase().includes('javascript')) {
+          filteredLanguages = languagesData?.components.filter(comp => 
+            comp.name.toLowerCase().includes('javascript') || comp.name.toLowerCase().includes('node')) || [];
+        }
+        
+        // Combine filtered data
         const allComponents = [
-          ...(librariesData?.components.map(comp => ({ ...comp, isLibrary: true, isLanguage: false })) || []),
-          ...(languagesData?.components.map(comp => ({ ...comp, isLibrary: false, isLanguage: true })) || [])
+          ...filteredLibraries.map(comp => ({ ...comp, isLibrary: true, isLanguage: false })),
+          ...filteredLanguages.map(comp => ({ ...comp, isLibrary: false, isLanguage: true }))
         ];
         
         const combinedData = {
@@ -110,10 +140,9 @@ const CBOMViewer = () => {
         // Auto-navigate to applications tab after search completion
         setActiveTab('applications');
         
-        const totalComponents = allComponents.length;
         toast({
           title: "Components Analysis Complete",
-          description: `Found ${librariesData?.components.length || 0} libraries and ${languagesData?.components.length || 0} languages across ${combinedData.totalApplications} applications.`,
+          description: `Found ${filteredLibraries.length} relevant libraries and ${filteredLanguages.length} languages matching your query.`,
         });
       }, 500);
     }, 2000);
@@ -276,18 +305,11 @@ const CBOMViewer = () => {
     if (selectedApplication) {
       items.push({ 
         label: 'Applications', 
-        onClick: () => {
-          setActiveTab('applications');
-          setSelectedApplication(null);
-          setSelectedService(null);
-        }
+        onClick: handleBackToApplications
       });
       items.push({ 
         label: selectedApplication.name, 
-        onClick: () => {
-          setActiveTab('services');
-          setSelectedService(null);
-        }
+        onClick: handleBackToServices
       });
     }
     
@@ -300,9 +322,25 @@ const CBOMViewer = () => {
 
   const hasDataAvailable = cbomData || cryptoMaterialsData;
 
+  // Determine which back button to show based on current tab
+  const getBackButtonProps = () => {
+    switch (activeTab) {
+      case 'applications':
+      case 'crypto-materials-results':
+      case 'components-analysis':
+        return { onBack: handleBackToSearch, showBackButton: true };
+      case 'services':
+        return { onBack: handleBackToApplications, showBackButton: true };
+      case 'overview':
+        return { onBack: handleBackToServices, showBackButton: true };
+      default:
+        return { showBackButton: false };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <CBOMHeader />
+      <CBOMHeader {...getBackButtonProps()} />
       
       <div className="container mx-auto p-6">
         {/* Show search summary and navigation helper when data is available */}
@@ -399,7 +437,7 @@ const CBOMViewer = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">
-                    Search and analyze certificates, keys, and cryptographic materials across hundreds of applications and platforms.
+                    Search and analyze certificates, keys, and other cryptographic materials across hundreds of applications and platforms.
                   </p>
                   <div className="text-sm text-gray-500 space-y-1">
                     <div>• Certificate expiration tracking</div>
