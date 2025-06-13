@@ -6,8 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, CheckCircle, Clock, Eye, Filter, Search, FileKey, Key, Shield, Building, Layers, Calendar, Download } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Eye, Filter, Search, FileKey, Key, Shield, ArrowUpDown } from 'lucide-react';
 import { CryptoMaterialsKnowledgeGraph } from './CryptoMaterialsKnowledgeGraph';
 import { CryptoMaterialsData, Certificate, CryptoKey } from '@/data/mockCryptoMaterialsData';
 
@@ -15,20 +14,23 @@ interface CryptoMaterialsAnalysisProps {
   data: CryptoMaterialsData;
 }
 
-interface TransformedCertificate extends Certificate {
+interface UnifiedMaterial {
+  id: string;
+  type: 'certificate' | 'key';
+  name: string;
   appId: string;
   serviceName: string;
   status: string;
   riskLevel: string;
-}
-
-interface TransformedKey extends CryptoKey {
-  appId: string;
-  serviceName: string;
-  keyLength: string;
-  keySource: string;
-  status: string;
-  riskLevel: string;
+  size: string;
+  issuerOrSource: string;
+  expiry?: string;
+  daysUntilExpiry?: number;
+  applications?: string[];
+  isActive?: boolean;
+  keyType?: string;
+  certType?: string;
+  createdDate?: string;
 }
 
 export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = ({ data }) => {
@@ -38,101 +40,113 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
   const [riskLevelFilter, setRiskLevelFilter] = useState('all');
   const [issuerFilter, setIssuerFilter] = useState('all');
   const [applicationFilter, setApplicationFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [materialTypeFilter, setMaterialTypeFilter] = useState('all');
+  const [sortField, setSortField] = useState<keyof UnifiedMaterial>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const getTransformedCertificates = (): TransformedCertificate[] => {
-    return data.certificates.map((cert, index) => ({
-      ...cert,
-      appId: `APP-${String(index + 1).padStart(3, '0')}`,
-      serviceName: cert.services && cert.services.length > 0 ? cert.services[0] : 'Unknown Service',
-      status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'active'),
-      riskLevel: cert.isExpired || cert.daysUntilExpiry < 30 ? 'high' : (cert.daysUntilExpiry < 90 ? 'medium' : 'low')
-    }));
-  };
-
-  const getTransformedKeys = (): TransformedKey[] => {
-    return data.keys.map((key, index) => ({
-      ...key,
-      appId: `APP-${String(index + 1).padStart(3, '0')}`,
-      serviceName: key.services && key.services.length > 0 ? key.services[0] : 'Unknown Service',
-      keyLength: `${key.keySize} bits`,
-      keySource: key.location || 'Unknown',
-      status: key.isActive ? 'active' : 'inactive',
-      riskLevel: !key.isActive || key.keySize < 2048 ? 'high' : (key.keySize < 4096 ? 'medium' : 'low')
-    }));
-  };
-
-  const transformedCertificates = useMemo(() => getTransformedCertificates(), [data.certificates]);
-  const transformedKeys = useMemo(() => getTransformedKeys(), [data.keys]);
+  const unifiedMaterials = useMemo((): UnifiedMaterial[] => {
+    const materials: UnifiedMaterial[] = [];
+    
+    // Transform certificates
+    data.certificates.forEach((cert, index) => {
+      materials.push({
+        id: cert.id,
+        type: 'certificate',
+        name: cert.commonName,
+        appId: `APP-${String(index + 1).padStart(3, '0')}`,
+        serviceName: cert.services && cert.services.length > 0 ? cert.services[0] : 'Unknown Service',
+        status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'active'),
+        riskLevel: cert.isExpired || cert.daysUntilExpiry < 30 ? 'high' : (cert.daysUntilExpiry < 90 ? 'medium' : 'low'),
+        size: `${cert.keySize} bits`,
+        issuerOrSource: cert.issuer,
+        expiry: cert.validTo,
+        daysUntilExpiry: cert.daysUntilExpiry,
+        applications: cert.applications,
+        certType: cert.certificateType
+      });
+    });
+    
+    // Transform keys
+    data.keys.forEach((key, index) => {
+      materials.push({
+        id: key.id,
+        type: 'key',
+        name: key.name,
+        appId: `APP-${String(index + 1).padStart(3, '0')}`,
+        serviceName: key.services && key.services.length > 0 ? key.services[0] : 'Unknown Service',
+        status: key.isActive ? 'active' : 'inactive',
+        riskLevel: !key.isActive || key.keySize < 2048 ? 'high' : (key.keySize < 4096 ? 'medium' : 'low'),
+        size: `${key.keySize} bits`,
+        issuerOrSource: key.location || 'Unknown',
+        applications: key.applications,
+        isActive: key.isActive,
+        keyType: key.type,
+        createdDate: key.createdDate
+      });
+    });
+    
+    return materials;
+  }, [data.certificates, data.keys]);
 
   const filterOptions = useMemo(() => {
-    const allMaterials = [...transformedCertificates, ...transformedKeys];
-    
     const getUniqueValues = (values: string[]): string[] => {
       return [...new Set(values.filter(value => value && value.trim() !== ''))];
     };
 
     return {
-      statuses: getUniqueValues([
-        ...transformedCertificates.map(cert => cert.status),
-        ...transformedKeys.map(key => key.status)
-      ]),
+      statuses: getUniqueValues(unifiedMaterials.map(material => material.status)),
       types: getUniqueValues([
-        ...transformedCertificates.map(cert => cert.certificateType),
-        ...transformedKeys.map(key => key.type)
+        ...unifiedMaterials.filter(m => m.certType).map(m => m.certType!),
+        ...unifiedMaterials.filter(m => m.keyType).map(m => m.keyType!)
       ]),
-      riskLevels: getUniqueValues([
-        ...transformedCertificates.map(cert => cert.riskLevel),
-        ...transformedKeys.map(key => key.riskLevel)
-      ]),
-      issuers: getUniqueValues([
-        ...transformedCertificates.map(cert => cert.issuer),
-        ...transformedKeys.map(key => key.keySource)
-      ]),
-      applications: getUniqueValues([
-        ...transformedCertificates.flatMap(cert => cert.applications || []),
-        ...transformedKeys.flatMap(key => key.applications || [])
-      ])
+      riskLevels: getUniqueValues(unifiedMaterials.map(material => material.riskLevel)),
+      issuers: getUniqueValues(unifiedMaterials.map(material => material.issuerOrSource)),
+      applications: getUniqueValues(unifiedMaterials.flatMap(material => material.applications || []))
     };
-  }, [transformedCertificates, transformedKeys]);
+  }, [unifiedMaterials]);
 
-  const filteredCertificates = useMemo(() => {
-    return transformedCertificates.filter(cert => {
+  const filteredAndSortedMaterials = useMemo(() => {
+    let filtered = unifiedMaterials.filter(material => {
       const matchesSearch = !searchFilter || 
-        cert.commonName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        cert.issuer.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        cert.appId.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        cert.serviceName.toLowerCase().includes(searchFilter.toLowerCase());
+        material.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        material.issuerOrSource.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        material.appId.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        material.serviceName.toLowerCase().includes(searchFilter.toLowerCase());
       
-      const matchesStatus = statusFilter === 'all' || cert.status === statusFilter;
-      const matchesType = typeFilter === 'all' || cert.certificateType === typeFilter;
-      const matchesRiskLevel = riskLevelFilter === 'all' || cert.riskLevel === riskLevelFilter;
-      const matchesIssuer = issuerFilter === 'all' || cert.issuer === issuerFilter;
+      const matchesStatus = statusFilter === 'all' || material.status === statusFilter;
+      const matchesType = typeFilter === 'all' || material.certType === typeFilter || material.keyType === typeFilter;
+      const matchesRiskLevel = riskLevelFilter === 'all' || material.riskLevel === riskLevelFilter;
+      const matchesIssuer = issuerFilter === 'all' || material.issuerOrSource === issuerFilter;
       const matchesApplication = applicationFilter === 'all' || 
-        (cert.applications && cert.applications.includes(applicationFilter));
+        (material.applications && material.applications.includes(applicationFilter));
+      const matchesMaterialType = materialTypeFilter === 'all' || material.type === materialTypeFilter;
       
-      return matchesSearch && matchesStatus && matchesType && matchesRiskLevel && matchesIssuer && matchesApplication;
+      return matchesSearch && matchesStatus && matchesType && matchesRiskLevel && 
+             matchesIssuer && matchesApplication && matchesMaterialType;
     });
-  }, [transformedCertificates, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter]);
 
-  const filteredKeys = useMemo(() => {
-    return transformedKeys.filter(key => {
-      const matchesSearch = !searchFilter || 
-        key.id.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        key.keySource.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        key.appId.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        key.serviceName.toLowerCase().includes(searchFilter.toLowerCase());
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
       
-      const matchesStatus = statusFilter === 'all' || key.status === statusFilter;
-      const matchesType = typeFilter === 'all' || key.type === typeFilter;
-      const matchesRiskLevel = riskLevelFilter === 'all' || key.riskLevel === riskLevelFilter;
-      const matchesIssuer = issuerFilter === 'all' || key.keySource === issuerFilter;
-      const matchesApplication = applicationFilter === 'all' || 
-        (key.applications && key.applications.includes(applicationFilter));
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
       
-      return matchesSearch && matchesStatus && matchesType && matchesRiskLevel && matchesIssuer && matchesApplication;
+      let comparison = 0;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.localeCompare(bValue);
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue));
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [transformedKeys, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter]);
+
+    return filtered;
+  }, [unifiedMaterials, searchFilter, statusFilter, typeFilter, riskLevelFilter, issuerFilter, applicationFilter, materialTypeFilter, sortField, sortDirection]);
 
   const clearFilters = () => {
     setSearchFilter('');
@@ -141,9 +155,22 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
     setRiskLevelFilter('all');
     setIssuerFilter('all');
     setApplicationFilter('all');
+    setMaterialTypeFilter('all');
   };
 
-  const allMaterials = [...transformedCertificates, ...transformedKeys];
+  const handleSort = (field: keyof UnifiedMaterial) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: keyof UnifiedMaterial) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+    return <ArrowUpDown className={`h-4 w-4 ${sortDirection === 'asc' ? 'text-blue-600' : 'text-blue-600 rotate-180'}`} />;
+  };
 
   return (
     <div className="space-y-6">
@@ -179,7 +206,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <div>
                 <div className="text-2xl font-bold text-red-600">
-                  {allMaterials.filter(item => item.riskLevel === 'high').length}
+                  {unifiedMaterials.filter(item => item.riskLevel === 'high').length}
                 </div>
                 <div className="text-sm text-gray-500">High Risk</div>
               </div>
@@ -193,7 +220,7 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
               <Clock className="h-5 w-5 text-yellow-600" />
               <div>
                 <div className="text-2xl font-bold text-yellow-600">
-                  {transformedCertificates.filter(cert => cert.status === 'expiring').length}
+                  {unifiedMaterials.filter(item => item.status === 'expiring').length}
                 </div>
                 <div className="text-sm text-gray-500">Expiring Soon</div>
               </div>
@@ -202,363 +229,242 @@ export const CryptoMaterialsAnalysis: React.FC<CryptoMaterialsAnalysisProps> = (
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="certificates">Certificates</TabsTrigger>
-          <TabsTrigger value="keys">Keys</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <CryptoMaterialsKnowledgeGraph data={data} />
-        </TabsContent>
-
-        <TabsContent value="certificates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileKey className="h-5 w-5" />
-                Certificates Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Advanced Filters */}
-              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Search</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search certificates..."
-                        value={searchFilter}
-                        onChange={(e) => setSearchFilter(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Status</label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {filterOptions.statuses.map(status => (
-                          <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Type</label>
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {filterOptions.types.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
-                    <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Risk Levels" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Risk Levels</SelectItem>
-                        {filterOptions.riskLevels.map(risk => (
-                          <SelectItem key={risk} value={risk}>{risk}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Issuer</label>
-                    <Select value={issuerFilter} onValueChange={setIssuerFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Issuers" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Issuers</SelectItem>
-                        {filterOptions.issuers.map(issuer => (
-                          <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Application</label>
-                    <Select value={applicationFilter} onValueChange={setApplicationFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Applications" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Applications</SelectItem>
-                        {filterOptions.applications.map(app => (
-                          <SelectItem key={app} value={app}>{app}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
-                    Showing {filteredCertificates.length} of {data.certificates.length} certificates
-                  </div>
-                  <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Clear Filters
-                  </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Crypto Materials Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Advanced Filters */}
+          <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search materials..."
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
               </div>
-
-              {/* Certificates Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Common Name</TableHead>
-                      <TableHead>App ID</TableHead>
-                      <TableHead>Service Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Issuer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Risk Level</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Applications</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCertificates.map((cert) => (
-                      <TableRow key={cert.id}>
-                        <TableCell className="font-medium">{cert.commonName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {cert.appId}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{cert.serviceName}</TableCell>
-                        <TableCell>{cert.certificateType}</TableCell>
-                        <TableCell>{cert.issuer}</TableCell>
-                        <TableCell>{getStatusBadge(cert.status)}</TableCell>
-                        <TableCell>{getRiskBadge(cert.riskLevel)}</TableCell>
-                        <TableCell>{cert.validTo}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {cert.applications?.slice(0, 2).map((app, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {app}
-                              </Badge>
-                            ))}
-                            {cert.applications && cert.applications.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{cert.applications.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Material Type</label>
+                <Select value={materialTypeFilter} onValueChange={setMaterialTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="certificate">Certificates</SelectItem>
+                    <SelectItem value="key">Keys</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {filterOptions.statuses.map(status => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
                     ))}
-                  </TableBody>
-                </Table>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="keys" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Keys Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Advanced Filters - similar structure as certificates */}
-              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Search</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search keys..."
-                        value={searchFilter}
-                        onChange={(e) => setSearchFilter(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Status</label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {filterOptions.statuses.map(status => (
-                          <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Type</label>
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {filterOptions.types.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
-                    <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Risk Levels" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Risk Levels</SelectItem>
-                        {filterOptions.riskLevels.map(risk => (
-                          <SelectItem key={risk} value={risk}>{risk}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Source</label>
-                    <Select value={issuerFilter} onValueChange={setIssuerFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Sources" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sources</SelectItem>
-                        {filterOptions.issuers.map(issuer => (
-                          <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Application</label>
-                    <Select value={applicationFilter} onValueChange={setApplicationFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Applications" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Applications</SelectItem>
-                        {filterOptions.applications.map(app => (
-                          <SelectItem key={app} value={app}>{app}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
-                    Showing {filteredKeys.length} of {data.keys.length} keys
-                  </div>
-                  <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Clear Filters
-                  </Button>
-                </div>
-              </div>
-
-              {/* Keys Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Key ID</TableHead>
-                      <TableHead>App ID</TableHead>
-                      <TableHead>Service Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Key Length</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Risk Level</TableHead>
-                      <TableHead>Created Date</TableHead>
-                      <TableHead>Applications</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredKeys.map((key) => (
-                      <TableRow key={key.id}>
-                        <TableCell className="font-medium font-mono text-sm">{key.id}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {key.appId}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{key.serviceName}</TableCell>
-                        <TableCell>{key.type}</TableCell>
-                        <TableCell>{key.keyLength}</TableCell>
-                        <TableCell>{key.keySource}</TableCell>
-                        <TableCell>{getStatusBadge(key.status)}</TableCell>
-                        <TableCell>{getRiskBadge(key.riskLevel)}</TableCell>
-                        <TableCell>{key.createdDate}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {key.applications?.slice(0, 2).map((app, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {app}
-                              </Badge>
-                            ))}
-                            {key.applications && key.applications.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{key.applications.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Crypto Type</label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {filterOptions.types.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
-                  </TableBody>
-                </Table>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Risk Level</label>
+                <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Risk Levels" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Risk Levels</SelectItem>
+                    {filterOptions.riskLevels.map(risk => (
+                      <SelectItem key={risk} value={risk}>{risk}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Issuer/Source</label>
+                <Select value={issuerFilter} onValueChange={setIssuerFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {filterOptions.issuers.map(issuer => (
+                      <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Application</label>
+                <Select value={applicationFilter} onValueChange={setApplicationFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Applications" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Applications</SelectItem>
+                    {filterOptions.applications.map(app => (
+                      <SelectItem key={app} value={app}>{app}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                Showing {filteredAndSortedMaterials.length} of {unifiedMaterials.length} materials
+                ({data.certificates.length} certificates, {data.keys.length} keys)
+              </div>
+              <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+
+          {/* Unified Materials Table */}
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('type')}>
+                    <div className="flex items-center gap-2">
+                      Type
+                      {getSortIcon('type')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-2">
+                      Name
+                      {getSortIcon('name')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('appId')}>
+                    <div className="flex items-center gap-2">
+                      App ID
+                      {getSortIcon('appId')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('serviceName')}>
+                    <div className="flex items-center gap-2">
+                      Service
+                      {getSortIcon('serviceName')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('size')}>
+                    <div className="flex items-center gap-2">
+                      Size
+                      {getSortIcon('size')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('issuerOrSource')}>
+                    <div className="flex items-center gap-2">
+                      Issuer/Source
+                      {getSortIcon('issuerOrSource')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
+                    <div className="flex items-center gap-2">
+                      Status
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('riskLevel')}>
+                    <div className="flex items-center gap-2">
+                      Risk
+                      {getSortIcon('riskLevel')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Expiry/Created</TableHead>
+                  <TableHead>Applications</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedMaterials.map((material) => (
+                  <TableRow key={`${material.type}-${material.id}`}>
+                    <TableCell>
+                      <Badge variant={material.type === 'certificate' ? 'default' : 'secondary'} className="text-xs">
+                        {material.type === 'certificate' ? (
+                          <><FileKey className="h-3 w-3 mr-1" />Cert</>
+                        ) : (
+                          <><Key className="h-3 w-3 mr-1" />Key</>
+                        )}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{material.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {material.appId}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{material.serviceName}</TableCell>
+                    <TableCell>{material.size}</TableCell>
+                    <TableCell>{material.issuerOrSource}</TableCell>
+                    <TableCell>{getStatusBadge(material.status)}</TableCell>
+                    <TableCell>{getRiskBadge(material.riskLevel)}</TableCell>
+                    <TableCell>
+                      {material.type === 'certificate' ? material.expiry : material.createdDate}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {material.applications?.slice(0, 2).map((app, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {app}
+                          </Badge>
+                        ))}
+                        {material.applications && material.applications.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{material.applications.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
