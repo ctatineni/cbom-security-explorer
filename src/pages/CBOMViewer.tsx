@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, 
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { NavigationHeader } from '@/components/cbom/NavigationHeader';
+import { LeftSidebar } from '@/components/cbom/LeftSidebar';
 import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
 import { CryptoMaterialsSearch } from '@/components/cbom/CryptoMaterialsSearch';
 import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
