@@ -119,12 +119,12 @@ const CBOMViewer = () => {
             <div className="max-w-6xl mx-auto space-y-8">
               {/* Search Mode Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${state.searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}`} 
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 hover:scale-105 ${state.searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'}`} 
                       onClick={() => handlers.setSearchMode('cbom')}>
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Shield className="h-6 w-6 text-blue-600" />
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Shield className="h-4 w-4 text-blue-600" />
                       </div>
                       Crypto Bill of Materials (CBOM)
                     </CardTitle>
@@ -154,12 +154,12 @@ const CBOMViewer = () => {
                   </CardContent>
                 </Card>
 
-                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${state.searchMode === 'crypto-materials' ? 'border-green-500 bg-green-50/50' : 'border-gray-200'}`} 
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 hover:scale-105 ${state.searchMode === 'crypto-materials' ? 'border-green-500 bg-green-50/50' : 'border-gray-200 hover:border-green-300'}`} 
                       onClick={() => handlers.setSearchMode('crypto-materials')}>
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <FileKey className="h-6 w-6 text-green-600" />
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <FileKey className="h-4 w-4 text-green-600" />
                       </div>
                       Crypto Materials
                     </CardTitle>
