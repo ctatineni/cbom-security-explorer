@@ -28,8 +28,6 @@ interface KeyRow {
   isActive: boolean;
 }
 
-const ITEMS_PER_PAGE = 50;
-
 // Debounce hook
 function useDebounce(value: string, delay: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -59,6 +57,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Debounce search to prevent excessive filtering
@@ -179,10 +178,10 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
     return filtered;
   }, [keyRows, debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change or items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter]);
+  }, [debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, itemsPerPage]);
 
   // Notify parent about filter changes
   useEffect(() => {
@@ -200,9 +199,9 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
     }
   }, [debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, onFiltersChange]);
 
-  const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredAndSortedRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + itemsPerPage);
 
   const clearFilters = useCallback(() => {
     setSearchFilter('');
@@ -461,7 +460,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
         
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} keys
+            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} keys
             {filteredAndSortedRows.length !== keys.length && (
               <span className="text-blue-600 ml-1">
                 (filtered from {keys.length} total)
@@ -469,10 +468,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Select value={ITEMS_PER_PAGE.toString()} onValueChange={(value) => {
-              // For now, keep fixed at 50, but could be made dynamic
-              console.log('Items per page:', value);
-            }}>
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
               <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
@@ -480,6 +476,7 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
                 <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">

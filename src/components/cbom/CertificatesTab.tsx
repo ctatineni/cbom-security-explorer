@@ -28,8 +28,6 @@ interface CertificateRow {
   isExpired: boolean;
 }
 
-const ITEMS_PER_PAGE = 50;
-
 // Debounce hook
 function useDebounce(value: string, delay: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -59,6 +57,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Debounce search to prevent excessive filtering
@@ -180,10 +179,10 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
     return filtered;
   }, [certificateRows, debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, sortField, sortDirection]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change or items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter]);
+  }, [debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, itemsPerPage]);
 
   // Notify parent about filter changes
   useEffect(() => {
@@ -201,9 +200,9 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
     }
   }, [debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, onFiltersChange]);
 
-  const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredAndSortedRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + itemsPerPage);
 
   const clearFilters = useCallback(() => {
     setSearchFilter('');
@@ -489,7 +488,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
         
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} certificates
+            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} certificates
             {filteredAndSortedRows.length !== certificates.length && (
               <span className="text-blue-600 ml-1">
                 (filtered from {certificates.length} total)
@@ -497,10 +496,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Select value={ITEMS_PER_PAGE.toString()} onValueChange={(value) => {
-              // For now, keep fixed at 50, but could be made dynamic
-              console.log('Items per page:', value);
-            }}>
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
               <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
@@ -508,6 +504,7 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
                 <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
