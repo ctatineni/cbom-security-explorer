@@ -95,9 +95,9 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
               })}
             </div>
             
-            {/* Connection lines - positioned below icons */}
-            <div className="absolute top-12 left-0 right-0 h-0.5 bg-gray-300">
-              <div className="mx-6 h-full relative">
+            {/* Connection line */}
+            <div className="absolute top-6 left-0 right-0 h-0.5 bg-gray-300 -z-10">
+              <div className="mx-12 h-full relative">
                 <div 
                   className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
                   style={{ 
