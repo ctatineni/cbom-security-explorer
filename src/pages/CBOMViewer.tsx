@@ -57,6 +57,7 @@ const CBOMViewer = () => {
     if (state.activeTab === 'search-selection') return 'search';
     if (state.activeTab === 'applications') return 'applications';
     if (state.activeTab === 'services' || state.activeTab === 'hosts') return 'services';
+    if (state.activeTab === 'components-analysis') return 'components';
     if (state.activeTab === 'overview') return 'overview';
     return 'search';
   };
@@ -71,6 +72,9 @@ const CBOMViewer = () => {
         break;
       case 'services':
         if (state.selectedApplication) handlers.setActiveTab('services');
+        break;
+      case 'components':
+        if (state.componentsDrillDownData) handlers.setActiveTab('components-analysis');
         break;
       case 'overview':
         if (state.selectedService || state.selectedHost) handlers.setActiveTab('overview');

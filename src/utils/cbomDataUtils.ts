@@ -1,4 +1,3 @@
-
 import { CBOMData } from '@/data/mockCBOMData';
 import { ComponentsDrillDownData } from '@/types/cbom';
 
@@ -12,6 +11,7 @@ export const generateComponentsDrillDown = (
   const componentUsage = new Map();
   
   cbomData.applications.forEach(app => {
+    // Process services
     app.services.forEach(service => {
       if (componentType === 'libraries' && service.libraries) {
         service.libraries.forEach(lib => {
@@ -68,6 +68,64 @@ export const generateComponentsDrillDown = (
         }
       }
     });
+
+    // Process hosts (VMs, containers, etc.)
+    if (app.hosts) {
+      app.hosts.forEach(host => {
+        if (componentType === 'libraries' && host.libraries) {
+          host.libraries.forEach(lib => {
+            const key = lib.name;
+            if (!componentUsage.has(key)) {
+              componentUsage.set(key, {
+                id: lib.name.toLowerCase().replace(/\s+/g, '-'),
+                name: lib.name,
+                version: lib.version,
+                hasVulnerabilities: lib.algorithms?.includes('deprecated') || false,
+                applications: new Set(),
+                services: [],
+                totalUsages: 0
+              });
+            }
+            
+            componentUsage.get(key).applications.add(app.name);
+            componentUsage.get(key).services.push({
+              serviceName: `${host.name} (${host.type})`,
+              applicationName: app.name,
+              appId: app.id,
+              usage: lib.functions || []
+            });
+            componentUsage.get(key).totalUsages++;
+          });
+        } else if (componentType === 'languages' && host.programmingLanguage) {
+          const language = host.programmingLanguage;
+          const key = language;
+          if (!componentUsage.has(key)) {
+            componentUsage.set(key, {
+              id: language.toLowerCase().replace(/\s+/g, '-'),
+              name: language,
+              language: language,
+              hasVulnerabilities: false,
+              applications: new Set(),
+              services: [],
+              totalUsages: 0
+            });
+          }
+          
+          componentUsage.get(key).applications.add(app.name);
+          componentUsage.get(key).services.push({
+            serviceName: `${host.name} (${host.type})`,
+            applicationName: app.name,
+            appId: app.id,
+            usage: host.libraries?.map(lib => ({
+              name: lib.name,
+              framework: lib.name,
+              purpose: 'Host library dependency'
+            })) || []
+          });
+          componentUsage.get(key).totalUsages++;
+        }
+      });
+    }
   });
   
   const components = Array.from(componentUsage.values())
@@ -85,7 +143,7 @@ export const generateComponentsDrillDown = (
     componentType,
     components,
     totalApplications: cbomData.applications.length,
-    totalServices: cbomData.applications.reduce((total, app) => total + app.services.length, 0)
+    totalServices: cbomData.applications.reduce((total, app) => total + app.services.length + (app.hosts?.length || 0), 0)
   };
 };
 

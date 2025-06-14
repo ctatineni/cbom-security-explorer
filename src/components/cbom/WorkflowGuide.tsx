@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Search, Building, Eye, CheckCircle, Target, Server } from 'lucide-react';
+import { ArrowRight, Search, Building, Eye, CheckCircle, Target, Server, Package } from 'lucide-react';
 
 interface WorkflowGuideProps {
-  currentStep: 'search' | 'applications' | 'services' | 'hosts' | 'overview';
+  currentStep: 'search' | 'applications' | 'services' | 'components' | 'overview';
   onStepClick?: (step: string) => void;
 }
 
@@ -16,20 +16,27 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
       title: 'Search & Query',
       description: 'Natural language search for crypto assets',
       icon: Search,
-      completed: ['applications', 'services', 'hosts', 'overview'].includes(currentStep)
+      completed: ['applications', 'services', 'components', 'overview'].includes(currentStep)
     },
     {
       id: 'applications',
       title: 'Applications',
       description: 'View all applications and risk levels',
       icon: Building,
-      completed: ['services', 'hosts', 'overview'].includes(currentStep)
+      completed: ['services', 'components', 'overview'].includes(currentStep)
     },
     {
       id: 'services',
       title: 'Services & Hosts',
       description: 'Code, VMs, containers analysis',
       icon: Eye,
+      completed: ['components', 'overview'].includes(currentStep)
+    },
+    {
+      id: 'components',
+      title: 'Components',
+      description: 'Libraries and programming languages',
+      icon: Package,
       completed: ['overview'].includes(currentStep)
     },
     {
@@ -55,7 +62,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
         <div className="space-y-8">
           {/* Icons row */}
           <div className="relative">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
               {steps.map((step, index) => {
                 const Icon = step.icon;
                 const isCurrent = step.id === currentStep;
@@ -102,7 +109,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
           </div>
           
           {/* Step details boxes */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
             {steps.map((step) => {
               const isCurrent = step.id === currentStep;
               const isCompleted = step.completed;
