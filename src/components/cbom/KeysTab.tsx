@@ -1,11 +1,10 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { Search, ArrowUpDown, Folder, Eye, Shield } from 'lucide-react';
 import { CryptoKey } from '@/data/mockCryptoMaterialsData';
 
@@ -180,6 +179,11 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
     return filtered;
   }, [keyRows, debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter]);
+
   // Notify parent about filter changes
   useEffect(() => {
     if (onFiltersChange) {
@@ -260,6 +264,97 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
       </div>
     );
   }, [expandedPaths, togglePathExpansion]);
+
+  // Enhanced pagination with ellipsis for large datasets
+  const renderPaginationItems = useCallback(() => {
+    const items = [];
+    const maxVisiblePages = 5;
+    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    // Previous button
+    items.push(
+      <PaginationItem key="prev">
+        <PaginationPrevious 
+          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+        />
+      </PaginationItem>
+    );
+
+    // First page if not in visible range
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            onClick={() => setCurrentPage(1)}
+            isActive={currentPage === 1}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+      
+      if (startPage > 2) {
+        items.push(
+          <PaginationItem key="ellipsis1">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+
+    // Visible page range
+    for (let page = startPage; page <= endPage; page++) {
+      items.push(
+        <PaginationItem key={page}>
+          <PaginationLink
+            onClick={() => setCurrentPage(page)}
+            isActive={currentPage === page}
+            className="cursor-pointer"
+          >
+            {page}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    // Last page if not in visible range
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="ellipsis2">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+      
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages)}
+            isActive={currentPage === totalPages}
+            className="cursor-pointer"
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    // Next button
+    items.push(
+      <PaginationItem key="next">
+        <PaginationNext 
+          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+        />
+      </PaginationItem>
+    );
+
+    return items;
+  }, [currentPage, totalPages]);
 
   return (
     <div className="space-y-4">
@@ -367,10 +462,30 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
             Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedRows.length)} of {filteredAndSortedRows.length} keys
+            {filteredAndSortedRows.length !== keys.length && (
+              <span className="text-blue-600 ml-1">
+                (filtered from {keys.length} total)
+              </span>
+            )}
           </div>
-          <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-            Clear Filters
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={ITEMS_PER_PAGE.toString()} onValueChange={(value) => {
+              // For now, keep fixed at 50, but could be made dynamic
+              console.log('Items per page:', value);
+            }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+              Clear Filters
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -478,40 +593,21 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Enhanced Pagination */}
       {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-            
-            {[...Array(Math.min(5, totalPages))].map((_, i) => {
-              const pageNum = i + 1;
-              return (
-                <PaginationItem key={pageNum}>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(pageNum)}
-                    isActive={currentPage === pageNum}
-                    className="cursor-pointer"
-                  >
-                    {pageNum}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-500">
+            Page {currentPage} of {totalPages}
+          </div>
+          <Pagination>
+            <PaginationContent>
+              {renderPaginationItems()}
+            </PaginationContent>
+          </Pagination>
+          <div className="text-sm text-gray-500">
+            {filteredAndSortedRows.length} results
+          </div>
+        </div>
       )}
     </div>
   );
