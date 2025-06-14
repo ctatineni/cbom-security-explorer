@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Search, Building, Eye, CheckCircle, Target, Server, Package } from 'lucide-react';
+import { ArrowRight, Search, Building, Eye, Target, Server, Package } from 'lucide-react';
 
 interface WorkflowGuideProps {
   currentStep: 'search' | 'applications' | 'services' | 'components' | 'overview';
@@ -29,28 +29,28 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
       title: 'Search & Query',
       description: 'Natural language search for crypto assets',
       icon: Search,
-      completed: hasApplicationsData
+      completed: false
     },
     {
       id: 'applications',
       title: 'Applications',
       description: 'View all applications and risk levels',
       icon: Building,
-      completed: hasServicesData
+      completed: false
     },
     {
       id: 'services',
       title: 'Services & Hosts',
       description: 'Code, VMs, containers analysis',
       icon: Eye,
-      completed: hasComponentsData || selectedService || selectedHost
+      completed: false
     },
     {
       id: 'components',
       title: 'Components',
       description: 'Libraries and programming languages',
       icon: Package,
-      completed: selectedService || selectedHost
+      completed: false
     },
     {
       id: 'overview',
@@ -79,7 +79,6 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
               {steps.map((step, index) => {
                 const Icon = step.icon;
                 const isCurrent = step.id === currentStep;
-                const isCompleted = step.completed;
                 
                 return (
                   <div key={step.id} className="flex justify-center relative">
@@ -88,16 +87,10 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
                       className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                         isCurrent
                           ? 'bg-blue-600 text-white shadow-lg scale-110'
-                          : isCompleted
-                          ? 'bg-green-500 text-white shadow-md hover:scale-105'
                           : 'bg-gray-200 text-gray-500 hover:bg-gray-300 hover:scale-105'
                       }`}
                     >
-                      {isCompleted && !isCurrent ? (
-                        <CheckCircle className="h-6 w-6" />
-                      ) : (
-                        <Icon className="h-6 w-6" />
-                      )}
+                      <Icon className="h-6 w-6" />
                     </button>
                     
                     {isCurrent && (
@@ -112,7 +105,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
             <div className="absolute top-6 left-0 right-0 h-0.5 bg-gray-300 -z-10">
               <div className="mx-12 h-full relative">
                 <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
                   style={{ 
                     width: `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%` 
                   }}
@@ -125,7 +118,6 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
           <div className="grid grid-cols-5 gap-4">
             {steps.map((step) => {
               const isCurrent = step.id === currentStep;
-              const isCompleted = step.completed;
               
               return (
                 <div 
@@ -133,19 +125,17 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
                   className={`text-center p-3 rounded-lg transition-all cursor-pointer ${
                     isCurrent 
                       ? 'bg-blue-100 border-2 border-blue-300' 
-                      : isCompleted
-                      ? 'bg-green-50 border border-green-200 hover:bg-green-100'
                       : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
                   }`}
                   onClick={() => onStepClick?.(step.id)}
                 >
                   <div className={`font-medium text-sm ${
-                    isCurrent ? 'text-blue-700' : isCompleted ? 'text-green-700' : 'text-gray-600'
+                    isCurrent ? 'text-blue-700' : 'text-gray-600'
                   }`}>
                     {step.title}
                   </div>
                   <div className={`text-xs mt-1 ${
-                    isCurrent ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                    isCurrent ? 'text-blue-600' : 'text-gray-500'
                   }`}>
                     {step.description}
                   </div>
@@ -153,11 +143,6 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({
                   {isCurrent && (
                     <Badge variant="default" className="mt-2 text-xs bg-blue-600">
                       Active
-                    </Badge>
-                  )}
-                  {isCompleted && !isCurrent && (
-                    <Badge variant="outline" className="mt-2 text-xs border-green-500 text-green-700">
-                      Complete
                     </Badge>
                   )}
                 </div>
