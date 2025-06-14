@@ -1,391 +1,102 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Toggle } from '@/components/ui/toggle';
-import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, Building, Key, FileKey, Code, Package } from 'lucide-react';
+import { Shield, Building, Layers, FileKey } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { NavigationHeader } from '@/components/cbom/NavigationHeader';
 import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
 import { CryptoMaterialsSearch } from '@/components/cbom/CryptoMaterialsSearch';
 import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
-import { DataFormatHandler } from '@/components/cbom/DataFormatHandler';
 import { ServiceDetailsModal } from '@/components/cbom/ServiceDetailsModal';
-import { CBOMBreadcrumb } from '@/components/cbom/CBOMBreadcrumb';
 import { ApplicationSelector } from '@/components/cbom/ApplicationSelector';
 import { ComponentsDrillDown } from '@/components/cbom/ComponentsDrillDown';
 import { CryptoMaterialsAnalysis } from '@/components/cbom/CryptoMaterialsAnalysis';
 import { SearchSummary } from '@/components/cbom/SearchSummary';
-import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMData';
-import { mockCryptoMaterialsData, CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
-import { useToast } from '@/hooks/use-toast';
 import { MetricsDashboard } from '@/components/cbom/MetricsDashboard';
 import { WorkflowGuide } from '@/components/cbom/WorkflowGuide';
 import { FlowIndicator } from '@/components/cbom/FlowIndicator';
 import { ComponentsViewGuide } from '@/components/cbom/ComponentsViewGuide';
-
-interface DataSource {
-  type: 'single' | 'multiple' | 'github';
-  format: string;
-  lastUpdated: string;
-  serviceCount: number;
-  status: 'active' | 'processing' | 'error';
-}
+import { useCBOMViewer } from '@/hooks/useCBOMViewer';
+import { getFilteredCBOMData } from '@/utils/cbomDataUtils';
 
 const CBOMViewer = () => {
-  const [searchMode, setSearchMode] = useState<'cbom' | 'crypto-materials'>('cbom');
-  const [cbomData, setCbomData] = useState<CBOMData | null>(null);
-  const [cryptoMaterialsData, setCryptoMaterialsData] = useState<CryptoMaterialsData | null>(null);
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showServiceDetails, setShowServiceDetails] = useState(false);
-  const [activeTab, setActiveTab] = useState('search-selection');
-  const [componentsDrillDownData, setComponentsDrillDownData] = useState(null);
-  const [lastSearchQuery, setLastSearchQuery] = useState('');
-  
-  const [dataSources] = useState<DataSource[]>([
-    {
-      type: 'multiple' as const,
-      format: 'Combined CBOM Report',
-      lastUpdated: '2 hours ago',
-      serviceCount: 156,
-      status: 'active' as const
-    },
-    {
-      type: 'single' as const,
-      format: 'Per-Service Reports',
-      lastUpdated: '1 day ago',
-      serviceCount: 89,
-      status: 'active' as const
-    },
-    {
-      type: 'github' as const,
-      format: 'GitHub Scan Results',
-      lastUpdated: '3 days ago',
-      serviceCount: 234,
-      status: 'processing' as const
-    }
-  ]);
-  
-  const [selectedDataSource, setSelectedDataSource] = useState<DataSource>(dataSources[0]);
-  const { toast } = useToast();
+  const { state, handlers } = useCBOMViewer();
 
-  const handleNaturalLanguageSearch = async (query: string) => {
-    setLoading(true);
-    setLastSearchQuery(query);
-    
-    // Simulate search - always load mock data first
-    setTimeout(() => {
-      setCbomData(mockCBOMData);
-      setLoading(false);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Found ${mockCBOMData.applications.length} applications with ${mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)} total services.`,
-      });
-
-      // Enhanced components drill down generation with better language detection
-      setTimeout(() => {
-        const librariesData = generateComponentsDrillDown(query, 'libraries');
-        const languagesData = generateComponentsDrillDown(query, 'languages');
-        
-        // Improved component filtering based on query intent
-        let filteredLibraries = librariesData?.components || [];
-        let filteredLanguages = languagesData?.components || [];
-        
-        // Enhanced language-specific filtering
-        if (query.toLowerCase().includes('java')) {
-          filteredLanguages = languagesData?.components.filter(comp => 
-            comp.name.toLowerCase().includes('java')) || [];
-          // Also filter libraries used by Java services
-          filteredLibraries = librariesData?.components.filter(comp =>
-            comp.services.some(service => 
-              mockCBOMData.applications.some(app => 
-                app.services.some(s => 
-                  s.name === service.serviceName && s.programmingLanguage?.toLowerCase().includes('java')
-                )
-              )
-            )
-          ) || [];
-        }
-        
-        if (query.toLowerCase().includes('python')) {
-          filteredLanguages = languagesData?.components.filter(comp => 
-            comp.name.toLowerCase().includes('python')) || [];
-        }
-        
-        if (query.toLowerCase().includes('node') || query.toLowerCase().includes('javascript')) {
-          filteredLanguages = languagesData?.components.filter(comp => 
-            comp.name.toLowerCase().includes('javascript') || comp.name.toLowerCase().includes('node')) || [];
-        }
-        
-        // Combine filtered data
-        const allComponents = [
-          ...filteredLibraries.map(comp => ({ ...comp, isLibrary: true, isLanguage: false })),
-          ...filteredLanguages.map(comp => ({ ...comp, isLibrary: false, isLanguage: true }))
-        ];
-        
-        const combinedData = {
-          query,
-          componentType: 'libraries' as const,
-          components: allComponents,
-          totalApplications: mockCBOMData.applications.length,
-          totalServices: mockCBOMData.applications.reduce((total, app) => total + app.services.length, 0)
-        };
-        
-        setComponentsDrillDownData(combinedData);
-        
-        // Auto-navigate to applications tab after search completion
-        setActiveTab('applications');
-        
-        toast({
-          title: "Components Analysis Complete",
-          description: `Found ${filteredLibraries.length} relevant libraries and ${filteredLanguages.length} languages matching your query.`,
-        });
-      }, 500);
-    }, 2000);
+  const getCurrentServices = () => {
+    if (!state.selectedApplication) return [];
+    return state.selectedApplication.services;
   };
 
-  const handleCryptoMaterialsSearch = async (query: string) => {
-    setLoading(true);
-    setLastSearchQuery(query);
-    
-    setTimeout(() => {
-      setCryptoMaterialsData(mockCryptoMaterialsData);
-      setActiveTab('crypto-materials-results');
-      setLoading(false);
-      
-      toast({
-        title: "Crypto Materials Analysis Complete",
-        description: `Found ${mockCryptoMaterialsData.certificates.length} certificates and ${mockCryptoMaterialsData.keys.length} keys matching your criteria.`,
-      });
-    }, 2000);
-  };
+  const hasDataAvailable = state.cbomData || state.cryptoMaterialsData;
 
-  const generateComponentsDrillDown = (query: string, componentType: 'libraries' | 'languages') => {
-    if (!cbomData) return null;
-    
-    const componentUsage = new Map();
-    
-    cbomData.applications.forEach(app => {
-      app.services.forEach(service => {
-        if (componentType === 'libraries' && service.libraries) {
-          service.libraries.forEach(lib => {
-            const key = lib.name;
-            if (!componentUsage.has(key)) {
-              componentUsage.set(key, {
-                id: lib.name.toLowerCase().replace(/\s+/g, '-'),
-                name: lib.name,
-                version: lib.version,
-                hasVulnerabilities: lib.algorithms?.includes('deprecated') || false,
-                applications: new Set(),
-                services: [],
-                totalUsages: 0
-              });
-            }
-            
-            componentUsage.get(key).applications.add(app.name);
-            componentUsage.get(key).services.push({
-              serviceName: service.name,
-              applicationName: app.name,
-              appId: app.id,
-              usage: lib.functions || []
-            });
-            componentUsage.get(key).totalUsages++;
-          });
-        } else if (componentType === 'languages') {
-          const language = service.programmingLanguage;
-          if (language) {
-            const key = language;
-            if (!componentUsage.has(key)) {
-              componentUsage.set(key, {
-                id: language.toLowerCase().replace(/\s+/g, '-'),
-                name: language,
-                language: language,
-                hasVulnerabilities: false,
-                applications: new Set(),
-                services: [],
-                totalUsages: 0
-              });
-            }
-            
-            componentUsage.get(key).applications.add(app.name);
-            componentUsage.get(key).services.push({
-              serviceName: service.name,
-              applicationName: app.name,
-              appId: app.id,
-              usage: service.libraries?.map(lib => ({
-                name: lib.name,
-                framework: lib.name,
-                purpose: 'Library dependency'
-              })) || []
-            });
-            componentUsage.get(key).totalUsages++;
-          }
-        }
-      });
-    });
-    
-    const components = Array.from(componentUsage.values())
-      .map(data => ({
-        ...data,
-        applicationCount: data.applications.size,
-        serviceCount: data.services.length,
-        applications: Array.from(data.applications),
-        services: data.services
-      }))
-      .sort((a, b) => b.applicationCount - a.applicationCount);
-    
-    return {
-      query,
-      componentType,
-      components,
-      totalApplications: cbomData.applications.length,
-      totalServices: cbomData.applications.reduce((total, app) => total + app.services.length, 0)
-    };
-  };
-
-  const handleGitHubScan = async (url: string) => {
-    toast({
-      title: "GitHub Scan Initiated",
-      description: "Your repository is being analyzed. Results will be available in approximately 30 minutes.",
-      duration: 5000,
-    });
-    
-    console.log('Starting GitHub scan for:', url);
-  };
-
-  const handleApplicationSelect = (application: Application) => {
-    setSelectedApplication(application);
-    setSelectedService(null);
-    setSelectedNode(null);
-    setActiveTab('services');
-  };
-
-  const handleNodeSelect = (nodeData) => {
-    setSelectedNode(nodeData);
-  };
-
-  const handleServiceSelectAndNavigate = (service: Service) => {
-    setSelectedService(service);
-    setSelectedNode(null);
-    setActiveTab('overview');
-  };
-
-  const handleServiceDetails = (service: Service) => {
-    setSelectedService(service);
-    setShowServiceDetails(true);
-  };
-
-  // Navigation handlers
-  const handleBackToSearch = () => {
-    setActiveTab('search-selection');
-    setSelectedApplication(null);
-    setSelectedService(null);
-    setSelectedNode(null);
-  };
-
-  const handleBackToApplications = () => {
-    setActiveTab('applications');
-    setSelectedService(null);
-    setSelectedNode(null);
-  };
-
-  const handleBackToServices = () => {
-    setActiveTab('services');
-    setSelectedService(null);
-    setSelectedNode(null);
-  };
-
-  const getFilteredCBOMData = (): any => {
-    if (!selectedService || !cbomData || !selectedApplication) return null;
-    
-    return {
-      application: {
-        name: selectedService.name,
-        version: selectedService.version || '1.0.0',
-        riskLevel: selectedService.riskLevel
-      },
-      cryptoAlgorithms: selectedService.cryptoAlgorithms,
-      libraries: selectedService.libraries,
-      metrics: cbomData.metrics
-    };
-  };
-
-  const getCurrentServices = (): Service[] => {
-    if (!selectedApplication) return [];
-    return selectedApplication.services;
-  };
-
-  const hasDataAvailable = cbomData || cryptoMaterialsData;
-
-  // Determine which back button to show based on current tab
   const getBackButtonProps = () => {
-    switch (activeTab) {
+    switch (state.activeTab) {
       case 'applications':
       case 'crypto-materials-results':
       case 'components-analysis':
-        return { onBack: handleBackToSearch, showBackButton: true };
+        return { onBack: handlers.handleBackToSearch, showBackButton: true };
       case 'services':
-        return { onBack: handleBackToApplications, showBackButton: true };
+        return { onBack: handlers.handleBackToApplications, showBackButton: true };
       case 'overview':
-        return { onBack: handleBackToServices, showBackButton: true };
+        return { onBack: handlers.handleBackToServices, showBackButton: true };
       default:
         return { showBackButton: false };
     }
   };
 
   const getCurrentWorkflowStep = () => {
-    if (activeTab === 'search-selection') return 'search';
-    if (activeTab === 'applications') return 'applications';
-    if (activeTab === 'components-analysis') return 'components';
-    if (activeTab === 'services') return 'services';
-    if (activeTab === 'overview') return 'overview';
+    if (state.activeTab === 'search-selection') return 'search';
+    if (state.activeTab === 'applications') return 'applications';
+    if (state.activeTab === 'components-analysis') return 'components';
+    if (state.activeTab === 'services') return 'services';
+    if (state.activeTab === 'overview') return 'overview';
     return 'search';
   };
 
   const handleWorkflowStepClick = (step: string) => {
     switch (step) {
       case 'search':
-        setActiveTab('search-selection');
+        handlers.setActiveTab('search-selection');
         break;
       case 'applications':
-        if (cbomData) setActiveTab('applications');
+        if (state.cbomData) handlers.setActiveTab('applications');
         break;
       case 'components':
-        if (componentsDrillDownData) setActiveTab('components-analysis');
+        if (state.componentsDrillDownData) handlers.setActiveTab('components-analysis');
         break;
       case 'services':
-        if (selectedApplication) setActiveTab('services');
+        if (state.selectedApplication) handlers.setActiveTab('services');
         break;
       case 'overview':
-        if (selectedService) setActiveTab('overview');
+        if (state.selectedService) handlers.setActiveTab('overview');
         break;
     }
   };
 
+  const filteredCBOMData = getFilteredCBOMData(state.selectedService, state.cbomData, state.selectedApplication);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavigationHeader
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+        activeTab={state.activeTab}
+        onTabChange={handlers.setActiveTab}
         {...getBackButtonProps()}
-        hasApplicationsData={!!cbomData}
-        hasComponentsData={!!componentsDrillDownData}
-        hasCryptoData={!!cryptoMaterialsData}
-        selectedApplication={selectedApplication}
-        selectedService={selectedService}
-        cbomData={cbomData}
-        cryptoMaterialsData={cryptoMaterialsData}
-        componentsDrillDownData={componentsDrillDownData}
+        hasApplicationsData={!!state.cbomData}
+        hasComponentsData={!!state.componentsDrillDownData}
+        hasCryptoData={!!state.cryptoMaterialsData}
+        selectedApplication={state.selectedApplication}
+        selectedService={state.selectedService}
+        cbomData={state.cbomData}
+        cryptoMaterialsData={state.cryptoMaterialsData}
+        componentsDrillDownData={state.componentsDrillDownData}
       />
       
       <div className="container mx-auto px-6 py-6 space-y-6">
         {/* Workflow Guide Section */}
-        {hasDataAvailable && activeTab !== 'search-selection' && (
+        {hasDataAvailable && state.activeTab !== 'search-selection' && (
           <WorkflowGuide
             currentStep={getCurrentWorkflowStep()}
             onStepClick={handleWorkflowStepClick}
@@ -393,24 +104,24 @@ const CBOMViewer = () => {
         )}
 
         {/* Search Summary Section */}
-        {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
+        {hasDataAvailable && state.lastSearchQuery && state.activeTab !== 'search-selection' && (
           <SearchSummary
-            query={lastSearchQuery}
-            totalApplications={cbomData?.applications.length || 0}
-            totalComponents={componentsDrillDownData?.components.length || 0}
-            onNavigateToApplications={() => setActiveTab('applications')}
-            onNavigateToComponents={() => setActiveTab('components-analysis')}
+            query={state.lastSearchQuery}
+            totalApplications={state.cbomData?.applications.length || 0}
+            totalComponents={state.componentsDrillDownData?.components.length || 0}
+            onNavigateToApplications={() => handlers.setActiveTab('applications')}
+            onNavigateToComponents={() => handlers.setActiveTab('components-analysis')}
           />
         )}
 
         {/* Main Content Area */}
         <div className="min-h-[600px]">
-          {activeTab === 'search-selection' && (
+          {state.activeTab === 'search-selection' && (
             <div className="max-w-6xl mx-auto space-y-8">
               {/* Search Mode Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}`} 
-                      onClick={() => setSearchMode('cbom')}>
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${state.searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}`} 
+                      onClick={() => handlers.setSearchMode('cbom')}>
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 rounded-lg">
@@ -444,8 +155,8 @@ const CBOMViewer = () => {
                   </CardContent>
                 </Card>
 
-                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${searchMode === 'crypto-materials' ? 'border-green-500 bg-green-50/50' : 'border-gray-200'}`} 
-                      onClick={() => setSearchMode('crypto-materials')}>
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${state.searchMode === 'crypto-materials' ? 'border-green-500 bg-green-50/50' : 'border-gray-200'}`} 
+                      onClick={() => handlers.setSearchMode('crypto-materials')}>
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3">
                       <div className="p-2 bg-green-100 rounded-lg">
@@ -482,38 +193,38 @@ const CBOMViewer = () => {
 
               {/* Search Interface */}
               <div className="max-w-4xl mx-auto">
-                {searchMode === 'cbom' && (
+                {state.searchMode === 'cbom' && (
                   <NaturalLanguageSearch
-                    onSearch={handleNaturalLanguageSearch}
-                    onGitHubScan={handleGitHubScan}
-                    loading={loading}
+                    onSearch={handlers.handleNaturalLanguageSearch}
+                    onGitHubScan={handlers.handleGitHubScan}
+                    loading={state.loading}
                   />
                 )}
 
-                {searchMode === 'crypto-materials' && (
+                {state.searchMode === 'crypto-materials' && (
                   <CryptoMaterialsSearch
-                    onSearch={handleCryptoMaterialsSearch}
-                    loading={loading}
+                    onSearch={handlers.handleCryptoMaterialsSearch}
+                    loading={state.loading}
                   />
                 )}
               </div>
             </div>
           )}
 
-          {activeTab === 'components-analysis' && componentsDrillDownData && (
-            <ComponentsDrillDown data={componentsDrillDownData} />
+          {state.activeTab === 'components-analysis' && state.componentsDrillDownData && (
+            <ComponentsDrillDown data={state.componentsDrillDownData} />
           )}
 
-          {activeTab === 'crypto-materials-results' && cryptoMaterialsData && (
-            <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
+          {state.activeTab === 'crypto-materials-results' && state.cryptoMaterialsData && (
+            <CryptoMaterialsAnalysis data={state.cryptoMaterialsData} />
           )}
 
-          {activeTab === 'applications' && cbomData && (
+          {state.activeTab === 'applications' && state.cbomData && (
             <div className="space-y-6">
               {/* Metrics Dashboard */}
               <MetricsDashboard 
-                services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
-                cbomData={cbomData} 
+                services={state.selectedApplication ? state.selectedApplication.services : state.cbomData.applications.flatMap(app => app.services)} 
+                cbomData={state.cbomData} 
               />
               
               {/* Progress Indicators */}
@@ -523,19 +234,19 @@ const CBOMViewer = () => {
                   description="You've analyzed all applications and their risk levels. Ready to explore components or dive into specific services."
                   nextStep="Analyze Components"
                   nextStepDescription="View library and language usage patterns"
-                  onNextStep={() => setActiveTab('components-analysis')}
+                  onNextStep={() => handlers.setActiveTab('components-analysis')}
                   stats={[
-                    { label: 'Applications', value: cbomData.applications.length, color: 'text-blue-600' },
-                    { label: 'Services', value: cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' }
+                    { label: 'Applications', value: state.cbomData.applications.length, color: 'text-blue-600' },
+                    { label: 'Services', value: state.cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' }
                   ]}
                 />
 
-                {componentsDrillDownData && (
+                {state.componentsDrillDownData && (
                   <ComponentsViewGuide
-                    totalComponents={componentsDrillDownData.components.length}
-                    totalLibraries={componentsDrillDownData.components.filter(c => c.isLibrary).length}
-                    totalLanguages={componentsDrillDownData.components.filter(c => c.isLanguage).length}
-                    onViewComponents={() => setActiveTab('components-analysis')}
+                    totalComponents={state.componentsDrillDownData.components.length}
+                    totalLibraries={state.componentsDrillDownData.components.filter(c => c.isLibrary).length}
+                    totalLanguages={state.componentsDrillDownData.components.filter(c => c.isLanguage).length}
+                    onViewComponents={() => handlers.setActiveTab('components-analysis')}
                   />
                 )}
               </div>
@@ -545,60 +256,60 @@ const CBOMViewer = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    Applications ({cbomData.applications.length})
+                    Applications ({state.cbomData.applications.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ApplicationSelector
-                    applications={cbomData.applications}
-                    selectedApplication={selectedApplication}
-                    onApplicationSelect={handleApplicationSelect}
+                    applications={state.cbomData.applications}
+                    selectedApplication={state.selectedApplication}
+                    onApplicationSelect={handlers.handleApplicationSelect}
                   />
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {activeTab === 'services' && selectedApplication && (
+          {state.activeTab === 'services' && state.selectedApplication && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Layers className="h-5 w-5" />
-                  Services in {selectedApplication.name} ({selectedApplication.services.length})
+                  Services in {state.selectedApplication.name} ({state.selectedApplication.services.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <VirtualizedServicesGrid
                   services={getCurrentServices()}
-                  selectedService={selectedService}
-                  onServiceSelect={handleServiceSelectAndNavigate}
-                  onServiceDetails={handleServiceDetails}
+                  selectedService={state.selectedService}
+                  onServiceSelect={handlers.handleServiceSelectAndNavigate}
+                  onServiceDetails={handlers.handleServiceDetails}
                 />
               </CardContent>
             </Card>
           )}
 
-          {activeTab === 'overview' && selectedService && getFilteredCBOMData() && (
+          {state.activeTab === 'overview' && state.selectedService && filteredCBOMData && (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-400px)]">
               <div className="lg:col-span-3">
                 <Card className="h-full">
                   <CardHeader>
-                    <CardTitle>Cryptographic Dependencies - {selectedService.name}</CardTitle>
+                    <CardTitle>Cryptographic Dependencies - {state.selectedService.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="h-[calc(100%-80px)]">
                     <CBOMGraph 
-                      data={getFilteredCBOMData()}
-                      onNodeSelect={handleNodeSelect}
-                      selectedNode={selectedNode}
+                      data={filteredCBOMData}
+                      onNodeSelect={handlers.handleNodeSelect}
+                      selectedNode={state.selectedNode}
                     />
                   </CardContent>
                 </Card>
               </div>
               <div className="lg:col-span-1">
                 <CBOMSidebar 
-                  selectedNode={selectedNode}
-                  cbomData={getFilteredCBOMData()}
-                  onNodeSelect={handleNodeSelect}
+                  selectedNode={state.selectedNode}
+                  cbomData={filteredCBOMData}
+                  onNodeSelect={handlers.handleNodeSelect}
                 />
               </div>
             </div>
@@ -606,11 +317,11 @@ const CBOMViewer = () => {
         </div>
       </div>
 
-      {selectedService && (
+      {state.selectedService && (
         <ServiceDetailsModal
-          service={selectedService}
-          open={showServiceDetails}
-          onClose={() => setShowServiceDetails(false)}
+          service={state.selectedService}
+          open={state.showServiceDetails}
+          onClose={() => handlers.setShowServiceDetails(false)}
         />
       )}
     </div>
