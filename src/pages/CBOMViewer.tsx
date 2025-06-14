@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -338,11 +337,11 @@ const CBOMViewer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavigationHeader
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Left Sidebar */}
+      <LeftSidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        {...getBackButtonProps()}
         hasApplicationsData={!!cbomData}
         hasComponentsData={!!componentsDrillDownData}
         hasCryptoData={!!cryptoMaterialsData}
@@ -352,169 +351,186 @@ const CBOMViewer = () => {
         cryptoMaterialsData={cryptoMaterialsData}
         componentsDrillDownData={componentsDrillDownData}
       />
-      
-      <div className="container mx-auto p-6">
-        {/* Show search summary when data is available */}
-        {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
-          <div className="mb-6">
-            <SearchSummary
-              query={lastSearchQuery}
-              totalApplications={cbomData?.applications.length || 0}
-              totalComponents={componentsDrillDownData?.components.length || 0}
-              onNavigateToApplications={() => setActiveTab('applications')}
-              onNavigateToComponents={() => setActiveTab('components-analysis')}
-            />
-          </div>
-        )}
 
-        {/* Content based on active tab */}
-        {activeTab === 'search-selection' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'cbom' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} 
-                    onClick={() => setSearchMode('cbom')}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-6 w-6 text-blue-600" />
-                    Crypto Bill of Materials (CBOM)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">
-                    Analyze cryptographic capabilities, algorithms, libraries, and programming languages across your applications.
-                  </p>
-                  <div className="text-sm text-gray-500 space-y-1">
-                    <div>• Find deprecated algorithms and libraries</div>
-                    <div>• Analyze component usage across applications</div>
-                    <div>• Programming language distribution</div>
-                    <div>• Risk assessment and compliance</div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'crypto-materials' ? 'ring-2 ring-green-500 bg-green-50' : ''}`} 
-                    onClick={() => setSearchMode('crypto-materials')}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileKey className="h-6 w-6 text-green-600" />
-                    Crypto Materials
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">
-                    Search and analyze certificates, keys, and other cryptographic materials across hundreds of applications and platforms.
-                  </p>
-                  <div className="text-sm text-gray-500 space-y-1">
-                    <div>• Certificate expiration tracking</div>
-                    <div>• Key strength and usage analysis</div>
-                    <div>• Cross-platform material relationships</div>
-                    <div>• Compliance and security monitoring</div>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        <NavigationHeader
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          {...getBackButtonProps()}
+          hasApplicationsData={!!cbomData}
+          hasComponentsData={!!componentsDrillDownData}
+          hasCryptoData={!!cryptoMaterialsData}
+          selectedApplication={selectedApplication}
+          selectedService={selectedService}
+          cbomData={cbomData}
+          cryptoMaterialsData={cryptoMaterialsData}
+          componentsDrillDownData={componentsDrillDownData}
+        />
+        
+        <div className="flex-1 p-6 overflow-auto">
+          {/* Show search summary when data is available */}
+          {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
+            <div className="mb-6">
+              <SearchSummary
+                query={lastSearchQuery}
+                totalApplications={cbomData?.applications.length || 0}
+                totalComponents={componentsDrillDownData?.components.length || 0}
+                onNavigateToApplications={() => setActiveTab('applications')}
+                onNavigateToComponents={() => setActiveTab('components-analysis')}
+              />
             </div>
+          )}
 
-            {searchMode === 'cbom' && (
-              <NaturalLanguageSearch
-                onSearch={handleNaturalLanguageSearch}
-                onGitHubScan={handleGitHubScan}
-                loading={loading}
-              />
-            )}
+          {/* Content based on active tab */}
+          {activeTab === 'search-selection' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'cbom' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} 
+                      onClick={() => setSearchMode('cbom')}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-6 w-6 text-blue-600" />
+                      Crypto Bill of Materials (CBOM)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4">
+                      Analyze cryptographic capabilities, algorithms, libraries, and programming languages across your applications.
+                    </p>
+                    <div className="text-sm text-gray-500 space-y-1">
+                      <div>• Find deprecated algorithms and libraries</div>
+                      <div>• Analyze component usage across applications</div>
+                      <div>• Programming language distribution</div>
+                      <div>• Risk assessment and compliance</div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {searchMode === 'crypto-materials' && (
-              <CryptoMaterialsSearch
-                onSearch={handleCryptoMaterialsSearch}
-                loading={loading}
-              />
-            )}
-          </div>
-        )}
+                <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'crypto-materials' ? 'ring-2 ring-green-500 bg-green-50' : ''}`} 
+                      onClick={() => setSearchMode('crypto-materials')}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileKey className="h-6 w-6 text-green-600" />
+                      Crypto Materials
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4">
+                      Search and analyze certificates, keys, and other cryptographic materials across hundreds of applications and platforms.
+                    </p>
+                    <div className="text-sm text-gray-500 space-y-1">
+                      <div>• Certificate expiration tracking</div>
+                      <div>• Key strength and usage analysis</div>
+                      <div>• Cross-platform material relationships</div>
+                      <div>• Compliance and security monitoring</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-        {activeTab === 'components-analysis' && componentsDrillDownData && (
-          <ComponentsDrillDown data={componentsDrillDownData} />
-        )}
-
-        {activeTab === 'crypto-materials-results' && cryptoMaterialsData && (
-          <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
-        )}
-
-        {activeTab === 'applications' && cbomData && (
-          <div className="space-y-6">
-            <MetricsDashboard 
-              services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
-              cbomData={cbomData} 
-            />
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Applications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApplicationSelector
-                  applications={cbomData.applications}
-                  selectedApplication={selectedApplication}
-                  onApplicationSelect={handleApplicationSelect}
+              {searchMode === 'cbom' && (
+                <NaturalLanguageSearch
+                  onSearch={handleNaturalLanguageSearch}
+                  onGitHubScan={handleGitHubScan}
+                  loading={loading}
                 />
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              )}
 
-        {activeTab === 'services' && selectedApplication && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Layers className="h-5 w-5" />
-                Services in {selectedApplication.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <VirtualizedServicesGrid
-                services={getCurrentServices()}
-                selectedService={selectedService}
-                onServiceSelect={handleServiceSelectAndNavigate}
-                onServiceDetails={handleServiceDetails}
+              {searchMode === 'crypto-materials' && (
+                <CryptoMaterialsSearch
+                  onSearch={handleCryptoMaterialsSearch}
+                  loading={loading}
+                />
+              )}
+            </div>
+          )}
+
+          {activeTab === 'components-analysis' && componentsDrillDownData && (
+            <ComponentsDrillDown data={componentsDrillDownData} />
+          )}
+
+          {activeTab === 'crypto-materials-results' && cryptoMaterialsData && (
+            <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
+          )}
+
+          {activeTab === 'applications' && cbomData && (
+            <div className="space-y-6">
+              <MetricsDashboard 
+                services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
+                cbomData={cbomData} 
               />
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'overview' && selectedService && getFilteredCBOMData() && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
-            <div className="lg:col-span-3">
-              <Card className="h-full">
+              <Card>
                 <CardHeader>
-                  <CardTitle>Cryptographic Dependencies - {selectedService.name}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Applications
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="h-[calc(100%-80px)]">
-                  <CBOMGraph 
-                    data={getFilteredCBOMData()}
-                    onNodeSelect={handleNodeSelect}
-                    selectedNode={selectedNode}
+                <CardContent>
+                  <ApplicationSelector
+                    applications={cbomData.applications}
+                    selectedApplication={selectedApplication}
+                    onApplicationSelect={handleApplicationSelect}
                   />
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1">
-              <CBOMSidebar 
-                selectedNode={selectedNode}
-                cbomData={getFilteredCBOMData()}
-                onNodeSelect={handleNodeSelect}
-              />
-            </div>
-          </div>
-        )}
+          )}
 
-        {selectedService && (
-          <ServiceDetailsModal
-            service={selectedService}
-            open={showServiceDetails}
-            onClose={() => setShowServiceDetails(false)}
-          />
-        )}
+          {activeTab === 'services' && selectedApplication && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Services in {selectedApplication.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VirtualizedServicesGrid
+                  services={getCurrentServices()}
+                  selectedService={selectedService}
+                  onServiceSelect={handleServiceSelectAndNavigate}
+                  onServiceDetails={handleServiceDetails}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'overview' && selectedService && getFilteredCBOMData() && (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
+              <div className="lg:col-span-3">
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Cryptographic Dependencies - {selectedService.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[calc(100%-80px)]">
+                    <CBOMGraph 
+                      data={getFilteredCBOMData()}
+                      onNodeSelect={handleNodeSelect}
+                      selectedNode={selectedNode}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="lg:col-span-1">
+                <CBOMSidebar 
+                  selectedNode={selectedNode}
+                  cbomData={getFilteredCBOMData()}
+                  onNodeSelect={handleNodeSelect}
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedService && (
+            <ServiceDetailsModal
+              service={selectedService}
+              open={showServiceDetails}
+              onClose={() => setShowServiceDetails(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
