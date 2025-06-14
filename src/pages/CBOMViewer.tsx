@@ -369,55 +369,53 @@ const CBOMViewer = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        <NavigationHeader
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          {...getBackButtonProps()}
-          hasApplicationsData={!!cbomData}
-          hasComponentsData={!!componentsDrillDownData}
-          hasCryptoData={!!cryptoMaterialsData}
-          selectedApplication={selectedApplication}
-          selectedService={selectedService}
-          cbomData={cbomData}
-          cryptoMaterialsData={cryptoMaterialsData}
-          componentsDrillDownData={componentsDrillDownData}
-        />
-        
-        <div className="flex-1 p-6 overflow-auto">
-          {/* Workflow Guide - show when data is available */}
-          {hasDataAvailable && activeTab !== 'search-selection' && (
-            <div className="mb-6">
-              <WorkflowGuide
-                currentStep={getCurrentWorkflowStep()}
-                onStepClick={handleWorkflowStepClick}
-              />
-            </div>
-          )}
+      <NavigationHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        {...getBackButtonProps()}
+        hasApplicationsData={!!cbomData}
+        hasComponentsData={!!componentsDrillDownData}
+        hasCryptoData={!!cryptoMaterialsData}
+        selectedApplication={selectedApplication}
+        selectedService={selectedService}
+        cbomData={cbomData}
+        cryptoMaterialsData={cryptoMaterialsData}
+        componentsDrillDownData={componentsDrillDownData}
+      />
+      
+      <div className="container mx-auto px-6 py-6 space-y-6">
+        {/* Workflow Guide Section */}
+        {hasDataAvailable && activeTab !== 'search-selection' && (
+          <WorkflowGuide
+            currentStep={getCurrentWorkflowStep()}
+            onStepClick={handleWorkflowStepClick}
+          />
+        )}
 
-          {/* Show search summary when data is available */}
-          {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
-            <div className="mb-6">
-              <SearchSummary
-                query={lastSearchQuery}
-                totalApplications={cbomData?.applications.length || 0}
-                totalComponents={componentsDrillDownData?.components.length || 0}
-                onNavigateToApplications={() => setActiveTab('applications')}
-                onNavigateToComponents={() => setActiveTab('components-analysis')}
-              />
-            </div>
-          )}
+        {/* Search Summary Section */}
+        {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
+          <SearchSummary
+            query={lastSearchQuery}
+            totalApplications={cbomData?.applications.length || 0}
+            totalComponents={componentsDrillDownData?.components.length || 0}
+            onNavigateToApplications={() => setActiveTab('applications')}
+            onNavigateToComponents={() => setActiveTab('components-analysis')}
+          />
+        )}
 
-          {/* Content based on active tab */}
+        {/* Main Content Area */}
+        <div className="min-h-[600px]">
           {activeTab === 'search-selection' && (
-            <div className="space-y-6">
+            <div className="max-w-6xl mx-auto space-y-8">
+              {/* Search Mode Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'cbom' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} 
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}`} 
                       onClick={() => setSearchMode('cbom')}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-6 w-6 text-blue-600" />
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Shield className="h-6 w-6 text-blue-600" />
+                      </div>
                       Crypto Bill of Materials (CBOM)
                     </CardTitle>
                   </CardHeader>
@@ -425,20 +423,34 @@ const CBOMViewer = () => {
                     <p className="text-gray-600 mb-4">
                       Analyze cryptographic capabilities, algorithms, libraries, and programming languages across your applications.
                     </p>
-                    <div className="text-sm text-gray-500 space-y-1">
-                      <div>• Find deprecated algorithms and libraries</div>
-                      <div>• Analyze component usage across applications</div>
-                      <div>• Programming language distribution</div>
-                      <div>• Risk assessment and compliance</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        Find deprecated algorithms and libraries
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        Analyze component usage across applications
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        Programming language distribution
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        Risk assessment and compliance
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'crypto-materials' ? 'ring-2 ring-green-500 bg-green-50' : ''}`} 
+                <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 ${searchMode === 'crypto-materials' ? 'border-green-500 bg-green-50/50' : 'border-gray-200'}`} 
                       onClick={() => setSearchMode('crypto-materials')}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileKey className="h-6 w-6 text-green-600" />
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <FileKey className="h-6 w-6 text-green-600" />
+                      </div>
                       Crypto Materials
                     </CardTitle>
                   </CardHeader>
@@ -446,30 +458,45 @@ const CBOMViewer = () => {
                     <p className="text-gray-600 mb-4">
                       Search and analyze certificates, keys, and other cryptographic materials across hundreds of applications and platforms.
                     </p>
-                    <div className="text-sm text-gray-500 space-y-1">
-                      <div>• Certificate expiration tracking</div>
-                      <div>• Key strength and usage analysis</div>
-                      <div>• Cross-platform material relationships</div>
-                      <div>• Compliance and security monitoring</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        Certificate expiration tracking
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        Key strength and usage analysis
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        Cross-platform material relationships
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        Compliance and security monitoring
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {searchMode === 'cbom' && (
-                <NaturalLanguageSearch
-                  onSearch={handleNaturalLanguageSearch}
-                  onGitHubScan={handleGitHubScan}
-                  loading={loading}
-                />
-              )}
+              {/* Search Interface */}
+              <div className="max-w-4xl mx-auto">
+                {searchMode === 'cbom' && (
+                  <NaturalLanguageSearch
+                    onSearch={handleNaturalLanguageSearch}
+                    onGitHubScan={handleGitHubScan}
+                    loading={loading}
+                  />
+                )}
 
-              {searchMode === 'crypto-materials' && (
-                <CryptoMaterialsSearch
-                  onSearch={handleCryptoMaterialsSearch}
-                  loading={loading}
-                />
-              )}
+                {searchMode === 'crypto-materials' && (
+                  <CryptoMaterialsSearch
+                    onSearch={handleCryptoMaterialsSearch}
+                    loading={loading}
+                  />
+                )}
+              </div>
             </div>
           )}
 
@@ -483,40 +510,42 @@ const CBOMViewer = () => {
 
           {activeTab === 'applications' && cbomData && (
             <div className="space-y-6">
+              {/* Metrics Dashboard */}
               <MetricsDashboard 
                 services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
                 cbomData={cbomData} 
               />
               
-              {/* Flow Indicator for Applications */}
-              <FlowIndicator
-                title="Applications Overview Complete"
-                description="You've analyzed all applications and their risk levels. Explore components or dive into specific services."
-                nextStep="Analyze Components"
-                nextStepDescription="View library and language usage patterns"
-                onNextStep={() => setActiveTab('components-analysis')}
-                stats={[
-                  { label: 'Applications', value: cbomData.applications.length, color: 'text-blue-600' },
-                  { label: 'Services', value: cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' },
-                  { label: 'Components', value: componentsDrillDownData?.components.length || 0, color: 'text-purple-600' }
-                ]}
-              />
-
-              {/* Components View Guide */}
-              {componentsDrillDownData && (
-                <ComponentsViewGuide
-                  totalComponents={componentsDrillDownData.components.length}
-                  totalLibraries={componentsDrillDownData.components.filter(c => c.isLibrary).length}
-                  totalLanguages={componentsDrillDownData.components.filter(c => c.isLanguage).length}
-                  onViewComponents={() => setActiveTab('components-analysis')}
+              {/* Progress Indicators */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FlowIndicator
+                  title="Applications Overview Complete"
+                  description="You've analyzed all applications and their risk levels. Ready to explore components or dive into specific services."
+                  nextStep="Analyze Components"
+                  nextStepDescription="View library and language usage patterns"
+                  onNextStep={() => setActiveTab('components-analysis')}
+                  stats={[
+                    { label: 'Applications', value: cbomData.applications.length, color: 'text-blue-600' },
+                    { label: 'Services', value: cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' }
+                  ]}
                 />
-              )}
 
+                {componentsDrillDownData && (
+                  <ComponentsViewGuide
+                    totalComponents={componentsDrillDownData.components.length}
+                    totalLibraries={componentsDrillDownData.components.filter(c => c.isLibrary).length}
+                    totalLanguages={componentsDrillDownData.components.filter(c => c.isLanguage).length}
+                    onViewComponents={() => setActiveTab('components-analysis')}
+                  />
+                )}
+              </div>
+
+              {/* Applications Grid */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    Applications
+                    Applications ({cbomData.applications.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -535,7 +564,7 @@ const CBOMViewer = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Layers className="h-5 w-5" />
-                  Services in {selectedApplication.name}
+                  Services in {selectedApplication.name} ({selectedApplication.services.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -550,7 +579,7 @@ const CBOMViewer = () => {
           )}
 
           {activeTab === 'overview' && selectedService && getFilteredCBOMData() && (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-400px)]">
               <div className="lg:col-span-3">
                 <Card className="h-full">
                   <CardHeader>
@@ -574,16 +603,16 @@ const CBOMViewer = () => {
               </div>
             </div>
           )}
-
-          {selectedService && (
-            <ServiceDetailsModal
-              service={selectedService}
-              open={showServiceDetails}
-              onClose={() => setShowServiceDetails(false)}
-            />
-          )}
         </div>
       </div>
+
+      {selectedService && (
+        <ServiceDetailsModal
+          service={selectedService}
+          open={showServiceDetails}
+          onClose={() => setShowServiceDetails(false)}
+        />
+      )}
     </div>
   );
 };
