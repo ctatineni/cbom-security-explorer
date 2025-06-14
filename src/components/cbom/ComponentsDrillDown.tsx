@@ -1,24 +1,15 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, BarChart3 } from 'lucide-react';
-import { 
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { ComponentsMetrics } from './ComponentsMetrics';
 import { ComponentsTreeView } from './ComponentsTreeView';
 import { ComponentsSummaryCard } from './ComponentsSummaryCard';
 import { ComponentsFilters } from './ComponentsFilters';
 import { getRiskBadge } from './ComponentsRiskBadge';
 import { useComponentsFiltering } from '@/hooks/useComponentsFiltering';
-import { useComponentsPagination } from '@/hooks/useComponentsPagination';
 
 interface ComponentsDrillDownProps {
   data: {
@@ -67,86 +58,6 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
     clearFilters
   } = useComponentsFiltering(data.components);
 
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedComponents,
-    goToPage,
-    goToNextPage,
-    goToPreviousPage,
-    resetPagination,
-    hasNextPage,
-    hasPreviousPage,
-    startIndex,
-    endIndex,
-    totalItems
-  } = useComponentsPagination({ 
-    items: filteredComponents, 
-    itemsPerPage: 10 
-  });
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    resetPagination();
-  }, [searchFilter, minApplicationsFilter, componentTypeFilter, resetPagination]);
-
-  const renderPaginationLinks = () => {
-    const links = [];
-    const maxVisiblePages = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    if (startPage > 1) {
-      links.push(
-        <PaginationItem key="1">
-          <PaginationLink onClick={() => goToPage(1)}>1</PaginationLink>
-        </PaginationItem>
-      );
-      if (startPage > 2) {
-        links.push(
-          <PaginationItem key="ellipsis-start">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      links.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            onClick={() => goToPage(i)}
-            isActive={currentPage === i}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        links.push(
-          <PaginationItem key="ellipsis-end">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-      links.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink onClick={() => goToPage(totalPages)}>{totalPages}</PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return links;
-  };
-
   return (
     <div className="space-y-6">
       <ComponentsSummaryCard data={data} />
@@ -186,17 +97,12 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
 
               <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
                 <span>
-                  Showing {startIndex}-{endIndex} of {totalItems} components
+                  Showing {filteredComponents.length} components
                 </span>
-                {totalPages > 1 && (
-                  <span>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                )}
               </div>
 
               <div className="space-y-4">
-                {paginatedComponents.map((component) => (
+                {filteredComponents.map((component) => (
                   <ComponentsTreeView
                     key={component.id}
                     component={component}
@@ -204,30 +110,6 @@ export const ComponentsDrillDown: React.FC<ComponentsDrillDownProps> = ({ data }
                   />
                 ))}
               </div>
-
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={goToPreviousPage}
-                          className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                      
-                      {renderPaginationLinks()}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={goToNextPage}
-                          className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
             </TabsContent>
           </Tabs>
         </CardContent>
