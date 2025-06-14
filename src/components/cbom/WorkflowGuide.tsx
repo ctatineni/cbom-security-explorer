@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Search, Building, Layers, Eye, CheckCircle } from 'lucide-react';
+import { ArrowRight, Search, Building, Layers, Eye, CheckCircle, Target } from 'lucide-react';
 
 interface WorkflowGuideProps {
   currentStep: 'search' | 'applications' | 'services' | 'overview' | 'components';
@@ -20,91 +20,135 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
     },
     {
       id: 'applications',
-      title: 'Applications Overview',
-      description: 'View all applications and their risk levels',
+      title: 'Applications',
+      description: 'View all applications and risk levels',
       icon: Building,
       completed: ['services', 'overview', 'components'].includes(currentStep)
     },
     {
       id: 'components',
-      title: 'Components Analysis',
-      description: 'Drill down into libraries and languages',
+      title: 'Components',
+      description: 'Libraries and languages analysis',
       icon: Layers,
       completed: false
     },
     {
       id: 'services',
-      title: 'Service Details',
-      description: 'Analyze individual services',
+      title: 'Services',
+      description: 'Individual service analysis',
       icon: Eye,
       completed: ['overview'].includes(currentStep)
     },
     {
       id: 'overview',
-      title: 'Crypto Graph',
+      title: 'Graph View',
       description: 'Visual dependency analysis',
-      icon: CheckCircle,
+      icon: Target,
       completed: false
     }
   ];
 
   return (
-    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          CBOM Analysis Workflow
+    <Card className="bg-gradient-to-r from-slate-50 to-blue-50 border-slate-200 shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold text-slate-800 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <Target className="h-4 w-4 text-white" />
+          </div>
+          Analysis Workflow
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isCurrent = step.id === currentStep;
-            const isCompleted = step.completed;
+        <div className="space-y-4">
+          {/* Progress bar */}
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                const isCurrent = step.id === currentStep;
+                const isCompleted = step.completed;
+                
+                return (
+                  <div key={step.id} className="flex flex-col items-center relative z-10">
+                    <button
+                      onClick={() => onStepClick?.(step.id)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isCurrent
+                          ? 'bg-blue-600 text-white shadow-lg scale-110'
+                          : isCompleted
+                          ? 'bg-green-500 text-white shadow-md hover:scale-105'
+                          : 'bg-gray-200 text-gray-500 hover:bg-gray-300 hover:scale-105'
+                      }`}
+                    >
+                      {isCompleted && !isCurrent ? (
+                        <CheckCircle className="h-6 w-6" />
+                      ) : (
+                        <Icon className="h-6 w-6" />
+                      )}
+                    </button>
+                    
+                    {isCurrent && (
+                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             
-            return (
-              <React.Fragment key={step.id}>
-                <div
-                  className={`flex flex-col items-center min-w-0 flex-shrink-0 cursor-pointer transition-all duration-200 ${
-                    isCurrent ? 'scale-105' : 'hover:scale-102'
+            {/* Connection lines */}
+            <div className="absolute top-6 left-6 right-6 h-0.5 bg-gray-300 -z-0">
+              <div 
+                className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
+                style={{ 
+                  width: `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%` 
+                }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Step details */}
+          <div className="grid grid-cols-5 gap-2 mt-6">
+            {steps.map((step) => {
+              const isCurrent = step.id === currentStep;
+              const isCompleted = step.completed;
+              
+              return (
+                <div 
+                  key={step.id}
+                  className={`text-center p-3 rounded-lg transition-all cursor-pointer ${
+                    isCurrent 
+                      ? 'bg-blue-100 border-2 border-blue-300' 
+                      : isCompleted
+                      ? 'bg-green-50 border border-green-200 hover:bg-green-100'
+                      : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
                   }`}
                   onClick={() => onStepClick?.(step.id)}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
-                      isCurrent
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : isCompleted
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
+                  <div className={`font-medium text-sm ${
+                    isCurrent ? 'text-blue-700' : isCompleted ? 'text-green-700' : 'text-gray-600'
+                  }`}>
+                    {step.title}
                   </div>
-                  <div className="text-center">
-                    <div className={`text-xs font-medium ${isCurrent ? 'text-blue-700' : 'text-gray-700'}`}>
-                      {step.title}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 max-w-20 leading-tight">
-                      {step.description}
-                    </div>
+                  <div className={`text-xs mt-1 ${
+                    isCurrent ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                  }`}>
+                    {step.description}
                   </div>
+                  
                   {isCurrent && (
-                    <Badge variant="default" className="mt-1 text-xs">
-                      Current
+                    <Badge variant="default" className="mt-2 text-xs bg-blue-600">
+                      Active
                     </Badge>
                   )}
                   {isCompleted && !isCurrent && (
-                    <CheckCircle className="h-3 w-3 text-green-500 mt-1" />
+                    <Badge variant="outline" className="mt-2 text-xs border-green-500 text-green-700">
+                      Complete
+                    </Badge>
                   )}
                 </div>
-                {index < steps.length - 1 && (
-                  <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0 mx-1" />
-                )}
-              </React.Fragment>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </CardContent>
     </Card>
