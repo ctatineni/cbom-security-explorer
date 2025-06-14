@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';
 import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, Building, Key, FileKey, Code, Package } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
-import { CBOMHeader } from '@/components/cbom/CBOMHeader';
+import { NavigationHeader } from '@/components/cbom/NavigationHeader';
 import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
 import { CryptoMaterialsSearch } from '@/components/cbom/CryptoMaterialsSearch';
 import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
@@ -18,7 +17,6 @@ import { ApplicationSelector } from '@/components/cbom/ApplicationSelector';
 import { ComponentsDrillDown } from '@/components/cbom/ComponentsDrillDown';
 import { CryptoMaterialsAnalysis } from '@/components/cbom/CryptoMaterialsAnalysis';
 import { SearchSummary } from '@/components/cbom/SearchSummary';
-import { TabNavigationHelper } from '@/components/cbom/TabNavigationHelper';
 import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMData';
 import { mockCryptoMaterialsData, CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 import { useToast } from '@/hooks/use-toast';
@@ -319,27 +317,6 @@ const CBOMViewer = () => {
     return selectedApplication.services;
   };
 
-  const getBreadcrumbItems = () => {
-    const items = [];
-    
-    if (selectedApplication) {
-      items.push({ 
-        label: 'Applications', 
-        onClick: handleBackToApplications
-      });
-      items.push({ 
-        label: selectedApplication.name, 
-        onClick: handleBackToServices
-      });
-    }
-    
-    if (selectedService) {
-      items.push({ label: selectedService.name, active: true });
-    }
-    
-    return items;
-  };
-
   const hasDataAvailable = cbomData || cryptoMaterialsData;
 
   // Determine which back button to show based on current tab
@@ -360,12 +337,24 @@ const CBOMViewer = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CBOMHeader {...getBackButtonProps()} />
+      <NavigationHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        {...getBackButtonProps()}
+        hasApplicationsData={!!cbomData}
+        hasComponentsData={!!componentsDrillDownData}
+        hasCryptoData={!!cryptoMaterialsData}
+        selectedApplication={selectedApplication}
+        selectedService={selectedService}
+        cbomData={cbomData}
+        cryptoMaterialsData={cryptoMaterialsData}
+        componentsDrillDownData={componentsDrillDownData}
+      />
       
       <div className="container mx-auto p-6">
-        {/* Show search summary and navigation helper when data is available */}
+        {/* Show search summary when data is available */}
         {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
-          <div className="space-y-4 mb-6">
+          <div className="mb-6">
             <SearchSummary
               query={lastSearchQuery}
               totalApplications={cbomData?.applications.length || 0}
@@ -373,58 +362,12 @@ const CBOMViewer = () => {
               onNavigateToApplications={() => setActiveTab('applications')}
               onNavigateToComponents={() => setActiveTab('components-analysis')}
             />
-            
-            <TabNavigationHelper
-              activeTab={activeTab}
-              hasApplicationsData={!!cbomData}
-              hasComponentsData={!!componentsDrillDownData}
-              hasCryptoData={!!cryptoMaterialsData}
-              selectedApplication={selectedApplication}
-              selectedService={selectedService}
-              onTabChange={setActiveTab}
-            />
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Only show tab list when we have data or are on search */}
-          {(hasDataAvailable || activeTab === 'search-selection') && (
-            <TabsList className={`grid w-full ${hasDataAvailable ? 'grid-cols-6' : 'grid-cols-1'}`}>
-              <TabsTrigger value="search-selection">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </TabsTrigger>
-              {hasDataAvailable && (
-                <>
-                  <TabsTrigger value="applications" disabled={!cbomData}>
-                    <Building className="h-4 w-4 mr-2" />
-                    Applications
-                    {cbomData && <Badge variant="secondary" className="ml-2 text-xs">{cbomData.applications.length}</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="services" disabled={!selectedApplication}>
-                    <Layers className="h-4 w-4 mr-2" />
-                    Services
-                    {selectedApplication && <Badge variant="secondary" className="ml-2 text-xs">{selectedApplication.services.length}</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="overview" disabled={!selectedService}>
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="components-analysis" disabled={!componentsDrillDownData}>
-                    <Package className="h-4 w-4 mr-2" />
-                    Components
-                    {componentsDrillDownData && <Badge variant="secondary" className="ml-2 text-xs">{componentsDrillDownData.components.length}</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="crypto-materials-results" disabled={!cryptoMaterialsData}>
-                    <Key className="h-4 w-4 mr-2" />
-                    Materials
-                    {cryptoMaterialsData && <Badge variant="secondary" className="ml-2 text-xs">{cryptoMaterialsData.certificates.length + cryptoMaterialsData.keys.length}</Badge>}
-                  </TabsTrigger>
-                </>
-              )}
-            </TabsList>
-          )}
-
-          <TabsContent value="search-selection" className="space-y-6">
+        {/* Content based on active tab */}
+        {activeTab === 'search-selection' && (
+          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className={`cursor-pointer transition-all hover:shadow-lg ${searchMode === 'cbom' ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`} 
                     onClick={() => setSearchMode('cbom')}>
@@ -483,95 +426,85 @@ const CBOMViewer = () => {
                 loading={loading}
               />
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="components-analysis" className="space-y-6">
-            {componentsDrillDownData && (
-              <ComponentsDrillDown data={componentsDrillDownData} />
-            )}
-          </TabsContent>
+        {activeTab === 'components-analysis' && componentsDrillDownData && (
+          <ComponentsDrillDown data={componentsDrillDownData} />
+        )}
 
-          <TabsContent value="crypto-materials-results" className="space-y-6">
-            {cryptoMaterialsData && (
-              <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
-            )}
-          </TabsContent>
+        {activeTab === 'crypto-materials-results' && cryptoMaterialsData && (
+          <CryptoMaterialsAnalysis data={cryptoMaterialsData} />
+        )}
 
-          <TabsContent value="applications" className="space-y-6">
-            {cbomData && (
-              <>
-                <MetricsDashboard 
-                  services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
-                  cbomData={cbomData} 
+        {activeTab === 'applications' && cbomData && (
+          <div className="space-y-6">
+            <MetricsDashboard 
+              services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
+              cbomData={cbomData} 
+            />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Applications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApplicationSelector
+                  applications={cbomData.applications}
+                  selectedApplication={selectedApplication}
+                  onApplicationSelect={handleApplicationSelect}
                 />
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      Applications
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ApplicationSelector
-                      applications={cbomData.applications}
-                      selectedApplication={selectedApplication}
-                      onApplicationSelect={handleApplicationSelect}
-                    />
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </TabsContent>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-          <TabsContent value="services" className="space-y-6">
-            {selectedApplication && (
-              <Card>
+        {activeTab === 'services' && selectedApplication && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Services in {selectedApplication.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VirtualizedServicesGrid
+                services={getCurrentServices()}
+                selectedService={selectedService}
+                onServiceSelect={handleServiceSelectAndNavigate}
+                onServiceDetails={handleServiceDetails}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'overview' && selectedService && getFilteredCBOMData() && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
+            <div className="lg:col-span-3">
+              <Card className="h-full">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layers className="h-5 w-5" />
-                    Services in {selectedApplication.name}
-                  </CardTitle>
+                  <CardTitle>Cryptographic Dependencies - {selectedService.name}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <VirtualizedServicesGrid
-                    services={getCurrentServices()}
-                    selectedService={selectedService}
-                    onServiceSelect={handleServiceSelectAndNavigate}
-                    onServiceDetails={handleServiceDetails}
+                <CardContent className="h-[calc(100%-80px)]">
+                  <CBOMGraph 
+                    data={getFilteredCBOMData()}
+                    onNodeSelect={handleNodeSelect}
+                    selectedNode={selectedNode}
                   />
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="overview" className="space-y-6">
-            {selectedService && getFilteredCBOMData() && (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
-                <div className="lg:col-span-3">
-                  <Card className="h-full">
-                    <CardHeader>
-                      <CardTitle>Cryptographic Dependencies - {selectedService.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[calc(100%-80px)]">
-                      <CBOMGraph 
-                        data={getFilteredCBOMData()}
-                        onNodeSelect={handleNodeSelect}
-                        selectedNode={selectedNode}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className="lg:col-span-1">
-                  <CBOMSidebar 
-                    selectedNode={selectedNode}
-                    cbomData={getFilteredCBOMData()}
-                    onNodeSelect={handleNodeSelect}
-                  />
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </div>
+            <div className="lg:col-span-1">
+              <CBOMSidebar 
+                selectedNode={selectedNode}
+                cbomData={getFilteredCBOMData()}
+                onNodeSelect={handleNodeSelect}
+              />
+            </div>
+          </div>
+        )}
 
         {selectedService && (
           <ServiceDetailsModal
