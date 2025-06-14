@@ -8,6 +8,7 @@ interface ComponentsSummaryCardProps {
     query: string;
     components: any[];
     totalApplications: number;
+    totalServices: number;
   };
 }
 
@@ -27,7 +28,7 @@ export const ComponentsSummaryCard: React.FC<ComponentsSummaryCardProps> = ({ da
         </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{data.components.length}</div>
             <div className="text-sm text-gray-500">Total Components</div>
@@ -45,10 +46,8 @@ export const ComponentsSummaryCard: React.FC<ComponentsSummaryCardProps> = ({ da
             <div className="text-sm text-gray-500">Applications</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {data.components.filter(comp => comp.hasVulnerabilities).length}
-            </div>
-            <div className="text-sm text-gray-500">High Risk Items</div>
+            <div className="text-2xl font-bold text-orange-600">{data.totalServices}</div>
+            <div className="text-sm text-gray-500">Total Services</div>
           </div>
         </div>
       </CardContent>
