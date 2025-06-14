@@ -21,6 +21,9 @@ import { mockCBOMData, CBOMData, Application, Service } from '@/data/mockCBOMDat
 import { mockCryptoMaterialsData, CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 import { useToast } from '@/hooks/use-toast';
 import { MetricsDashboard } from '@/components/cbom/MetricsDashboard';
+import { WorkflowGuide } from '@/components/cbom/WorkflowGuide';
+import { FlowIndicator } from '@/components/cbom/FlowIndicator';
+import { ComponentsViewGuide } from '@/components/cbom/ComponentsViewGuide';
 
 interface DataSource {
   type: 'single' | 'multiple' | 'github';
@@ -335,6 +338,35 @@ const CBOMViewer = () => {
     }
   };
 
+  const getCurrentWorkflowStep = () => {
+    if (activeTab === 'search-selection') return 'search';
+    if (activeTab === 'applications') return 'applications';
+    if (activeTab === 'components-analysis') return 'components';
+    if (activeTab === 'services') return 'services';
+    if (activeTab === 'overview') return 'overview';
+    return 'search';
+  };
+
+  const handleWorkflowStepClick = (step: string) => {
+    switch (step) {
+      case 'search':
+        setActiveTab('search-selection');
+        break;
+      case 'applications':
+        if (cbomData) setActiveTab('applications');
+        break;
+      case 'components':
+        if (componentsDrillDownData) setActiveTab('components-analysis');
+        break;
+      case 'services':
+        if (selectedApplication) setActiveTab('services');
+        break;
+      case 'overview':
+        if (selectedService) setActiveTab('overview');
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Content Area */}
@@ -354,6 +386,16 @@ const CBOMViewer = () => {
         />
         
         <div className="flex-1 p-6 overflow-auto">
+          {/* Workflow Guide - show when data is available */}
+          {hasDataAvailable && activeTab !== 'search-selection' && (
+            <div className="mb-6">
+              <WorkflowGuide
+                currentStep={getCurrentWorkflowStep()}
+                onStepClick={handleWorkflowStepClick}
+              />
+            </div>
+          )}
+
           {/* Show search summary when data is available */}
           {hasDataAvailable && lastSearchQuery && activeTab !== 'search-selection' && (
             <div className="mb-6">
@@ -445,6 +487,31 @@ const CBOMViewer = () => {
                 services={selectedApplication ? selectedApplication.services : cbomData.applications.flatMap(app => app.services)} 
                 cbomData={cbomData} 
               />
+              
+              {/* Flow Indicator for Applications */}
+              <FlowIndicator
+                title="Applications Overview Complete"
+                description="You've analyzed all applications and their risk levels. Explore components or dive into specific services."
+                nextStep="Analyze Components"
+                nextStepDescription="View library and language usage patterns"
+                onNextStep={() => setActiveTab('components-analysis')}
+                stats={[
+                  { label: 'Applications', value: cbomData.applications.length, color: 'text-blue-600' },
+                  { label: 'Services', value: cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' },
+                  { label: 'Components', value: componentsDrillDownData?.components.length || 0, color: 'text-purple-600' }
+                ]}
+              />
+
+              {/* Components View Guide */}
+              {componentsDrillDownData && (
+                <ComponentsViewGuide
+                  totalComponents={componentsDrillDownData.components.length}
+                  totalLibraries={componentsDrillDownData.components.filter(c => c.isLibrary).length}
+                  totalLanguages={componentsDrillDownData.components.filter(c => c.isLanguage).length}
+                  onViewComponents={() => setActiveTab('components-analysis')}
+                />
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
