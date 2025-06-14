@@ -59,17 +59,17 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {/* Progress bar */}
+        <div className="space-y-6">
+          {/* Icons row */}
           <div className="relative">
-            <div className="flex items-center justify-between">
+            <div className="grid grid-cols-5 gap-4">
               {steps.map((step, index) => {
                 const Icon = step.icon;
                 const isCurrent = step.id === currentStep;
                 const isCompleted = step.completed;
                 
                 return (
-                  <div key={step.id} className="flex flex-col items-center relative z-10">
+                  <div key={step.id} className="flex justify-center relative">
                     <button
                       onClick={() => onStepClick?.(step.id)}
                       className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
@@ -96,7 +96,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
             </div>
             
             {/* Connection lines */}
-            <div className="absolute top-6 left-6 right-6 h-0.5 bg-gray-300 -z-0">
+            <div className="absolute top-6 left-0 right-0 h-0.5 bg-gray-300 mx-6">
               <div 
                 className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
                 style={{ 
@@ -106,8 +106,8 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
             </div>
           </div>
           
-          {/* Step details */}
-          <div className="grid grid-cols-5 gap-2 mt-6">
+          {/* Step details boxes */}
+          <div className="grid grid-cols-5 gap-4">
             {steps.map((step) => {
               const isCurrent = step.id === currentStep;
               const isCompleted = step.completed;
