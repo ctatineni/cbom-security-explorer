@@ -95,6 +95,7 @@ export interface Host {
   operatingSystem?: string;
   containerImage?: string;
   kubernetesNamespace?: string;
+  programmingLanguage?: string;
 }
 
 export interface Application {
@@ -314,6 +315,7 @@ const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
   const hostCount = Math.floor(Math.random() * 5) + 2; // 2-6 hosts per app
   const hostTypes = ['vm', 'container', 'bare-metal', 'kubernetes-pod'] as const;
   const osTypes = ['Ubuntu 20.04', 'CentOS 8', 'Alpine Linux', 'Windows Server 2019', 'RHEL 8'];
+  const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
   
   for (let i = 0; i < hostCount; i++) {
     const hostType = hostTypes[Math.floor(Math.random() * hostTypes.length)];
@@ -334,7 +336,8 @@ const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
       libraries: hostLibraries,
       lastScanned: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       ipAddress: `192.168.${appIndex + 1}.${i + 10}`,
-      operatingSystem: osTypes[Math.floor(Math.random() * osTypes.length)]
+      operatingSystem: osTypes[Math.floor(Math.random() * osTypes.length)],
+      programmingLanguage: Math.random() > 0.3 ? languages[Math.floor(Math.random() * languages.length)] : undefined
     };
     
     if (hostType === 'container') {
