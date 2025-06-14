@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,7 +117,7 @@ const CBOMViewer = () => {
         {/* Main Content Area */}
         <div className="min-h-[600px]">
           {state.activeTab === 'search-selection' && (
-            <div className="max-w-6xl mx-auto space-y-8">
+            <div className="max-w-6xl mx-auto space-y-6">
               {/* Search Mode Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className={`cursor-pointer transition-all hover:shadow-lg border-2 hover:scale-105 ${state.searchMode === 'cbom' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'}`} 
@@ -191,7 +192,7 @@ const CBOMViewer = () => {
               </div>
 
               {/* Search Interface */}
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-6xl mx-auto">
                 {state.searchMode === 'cbom' && (
                   <NaturalLanguageSearch
                     onSearch={handlers.handleNaturalLanguageSearch}
