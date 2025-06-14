@@ -59,7 +59,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Icons row */}
           <div className="relative">
             <div className="grid grid-cols-5 gap-4">
@@ -95,14 +95,16 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onSte
               })}
             </div>
             
-            {/* Connection lines */}
-            <div className="absolute top-6 left-0 right-0 h-0.5 bg-gray-300 mx-6">
-              <div 
-                className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
-                style={{ 
-                  width: `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%` 
-                }}
-              ></div>
+            {/* Connection lines - positioned below icons */}
+            <div className="absolute top-12 left-0 right-0 h-0.5 bg-gray-300">
+              <div className="mx-6 h-full relative">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-500 to-blue-500 transition-all duration-500"
+                  style={{ 
+                    width: `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%` 
+                  }}
+                ></div>
+              </div>
             </div>
           </div>
           

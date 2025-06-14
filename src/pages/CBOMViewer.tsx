@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -226,30 +225,6 @@ const CBOMViewer = () => {
                 services={state.selectedApplication ? state.selectedApplication.services : state.cbomData.applications.flatMap(app => app.services)} 
                 cbomData={state.cbomData} 
               />
-              
-              {/* Progress Indicators */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <FlowIndicator
-                  title="Applications Overview Complete"
-                  description="You've analyzed all applications and their risk levels. Ready to explore components or dive into specific services."
-                  nextStep="Analyze Components"
-                  nextStepDescription="View library and language usage patterns"
-                  onNextStep={() => handlers.setActiveTab('components-analysis')}
-                  stats={[
-                    { label: 'Applications', value: state.cbomData.applications.length, color: 'text-blue-600' },
-                    { label: 'Services', value: state.cbomData.applications.reduce((total, app) => total + app.services.length, 0), color: 'text-green-600' }
-                  ]}
-                />
-
-                {state.componentsDrillDownData && (
-                  <ComponentsViewGuide
-                    totalComponents={state.componentsDrillDownData.components.length}
-                    totalLibraries={state.componentsDrillDownData.components.filter(c => c.isLibrary).length}
-                    totalLanguages={state.componentsDrillDownData.components.filter(c => c.isLanguage).length}
-                    onViewComponents={() => handlers.setActiveTab('components-analysis')}
-                  />
-                )}
-              </div>
 
               {/* Applications Grid */}
               <Card>

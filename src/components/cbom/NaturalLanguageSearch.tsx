@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Search, Sparkles, GitBranch, Clock, Lightbulb } from 'lucide-react';
+import { CBOMAnalysisGuide } from './CBOMAnalysisGuide';
 
 interface NaturalLanguageSearchProps {
   onSearch: (query: string) => void;
@@ -61,124 +62,129 @@ export const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-600" />
-          AI-Powered Cryptographic Analysis
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Ask natural language questions about your cryptographic assets, libraries, and languages or scan a GitHub repository
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Natural Language Search */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Natural Language Query</label>
-            <Textarea
-              placeholder="e.g., Show me all libraries using deprecated algorithms with high risk..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              rows={3}
-              className="resize-none"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleSearch}
-              disabled={loading || !query.trim()}
-              className="flex items-center gap-2"
-            >
-              <Search className="h-4 w-4" />
-              {loading ? 'Analyzing...' : 'Analyze Assets'}
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setShowGitHubInput(!showGitHubInput)}
-              className="flex items-center gap-2"
-            >
-              <GitBranch className="h-4 w-4" />
-              Scan GitHub Repo
-            </Button>
-          </div>
-        </div>
-
-        {/* GitHub URL Input */}
-        {showGitHubInput && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            AI-Powered Cryptographic Analysis
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Ask natural language questions about your cryptographic assets, libraries, and languages or scan a GitHub repository
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Natural Language Search */}
+          <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">GitHub Repository URL</label>
+              <label className="text-sm font-medium">Natural Language Query</label>
               <Textarea
-                placeholder="https://github.com/username/repository-name"
-                value={githubUrl}
-                onChange={(e) => setGithubUrl(e.target.value)}
-                rows={2}
+                placeholder="e.g., Show me all libraries using deprecated algorithms with high risk..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                rows={3}
                 className="resize-none"
               />
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded">
-              <Clock className="h-4 w-4" />
-              <span>Repository analysis takes approximately 30 minutes to complete</span>
-            </div>
-            
             <div className="flex gap-2">
               <Button 
-                onClick={handleGitHubScan}
-                disabled={!githubUrl.trim()}
-                size="sm"
+                onClick={handleSearch}
+                disabled={loading || !query.trim()}
+                className="flex items-center gap-2"
               >
-                Start Scan
+                <Search className="h-4 w-4" />
+                {loading ? 'Analyzing...' : 'Analyze Assets'}
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setShowGitHubInput(false)}
-                size="sm"
+                onClick={() => setShowGitHubInput(!showGitHubInput)}
+                className="flex items-center gap-2"
               >
-                Cancel
+                <GitBranch className="h-4 w-4" />
+                Scan GitHub Repo
               </Button>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-600">Example URLs:</div>
-              <div className="flex flex-wrap gap-1">
-                {EXAMPLE_GITHUB_URLS.map((url, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="cursor-pointer text-xs"
-                    onClick={() => setGithubUrl(url)}
-                  >
-                    {url}
-                  </Badge>
-                ))}
+          {/* GitHub URL Input */}
+          {showGitHubInput && (
+            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">GitHub Repository URL</label>
+                <Textarea
+                  placeholder="https://github.com/username/repository-name"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded">
+                <Clock className="h-4 w-4" />
+                <span>Repository analysis takes approximately 30 minutes to complete</span>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleGitHubScan}
+                  disabled={!githubUrl.trim()}
+                  size="sm"
+                >
+                  Start Scan
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowGitHubInput(false)}
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-gray-600">Example URLs:</div>
+                <div className="flex flex-wrap gap-1">
+                  {EXAMPLE_GITHUB_URLS.map((url, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="cursor-pointer text-xs"
+                      onClick={() => setGithubUrl(url)}
+                    >
+                      {url}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Example Queries */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Lightbulb className="h-4 w-4" />
-            Example Queries
+          {/* Example Queries */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Lightbulb className="h-4 w-4" />
+              Example Queries
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {EXAMPLE_QUERIES.map((example, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="cursor-pointer p-2 text-xs hover:bg-blue-50 hover:border-blue-300 text-left justify-start h-auto whitespace-normal"
+                  onClick={() => handleExampleClick(example)}
+                >
+                  {example}
+                </Badge>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {EXAMPLE_QUERIES.map((example, index) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className="cursor-pointer p-2 text-xs hover:bg-blue-50 hover:border-blue-300 text-left justify-start h-auto whitespace-normal"
-                onClick={() => handleExampleClick(example)}
-              >
-                {example}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Analysis Guide */}
+      <CBOMAnalysisGuide />
+    </div>
   );
 };
