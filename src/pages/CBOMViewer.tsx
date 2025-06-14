@@ -7,7 +7,6 @@ import { Shield, AlertTriangle, CheckCircle, Layers, Clock, ArrowRight, Search, 
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { NavigationHeader } from '@/components/cbom/NavigationHeader';
-import { LeftSidebar } from '@/components/cbom/LeftSidebar';
 import { NaturalLanguageSearch } from '@/components/cbom/NaturalLanguageSearch';
 import { CryptoMaterialsSearch } from '@/components/cbom/CryptoMaterialsSearch';
 import { VirtualizedServicesGrid } from '@/components/cbom/VirtualizedServicesGrid';
@@ -337,21 +336,7 @@ const CBOMViewer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Sidebar */}
-      <LeftSidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        hasApplicationsData={!!cbomData}
-        hasComponentsData={!!componentsDrillDownData}
-        hasCryptoData={!!cryptoMaterialsData}
-        selectedApplication={selectedApplication}
-        selectedService={selectedService}
-        cbomData={cbomData}
-        cryptoMaterialsData={cryptoMaterialsData}
-        componentsDrillDownData={componentsDrillDownData}
-      />
-
+    <div className="min-h-screen bg-gray-50">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         <NavigationHeader
