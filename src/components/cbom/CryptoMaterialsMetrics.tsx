@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,7 +75,7 @@ export const CryptoMaterialsMetrics: React.FC<CryptoMaterialsMetricsProps> = ({ 
         if (certFilters.search && certFilters.searchField) {
           const searchValue = certFilters.search.toLowerCase();
           if (certFilters.searchField === 'all') {
-            const searchableText = `${cert.subject} ${cert.issuer} ${cert.services?.join(' ') || ''} ${cert.applications?.join(' ') || ''}`.toLowerCase();
+            const searchableText = `${cert.commonName} ${cert.issuer} ${cert.services?.join(' ') || ''} ${cert.applications?.join(' ') || ''}`.toLowerCase();
             if (!searchableText.includes(searchValue)) return false;
           }
         }
@@ -610,7 +611,7 @@ export const CryptoMaterialsMetrics: React.FC<CryptoMaterialsMetricsProps> = ({ 
                             </Badge>
                           )}
                           {app.selfSignedCount > 0 && (
-                            <Badge variant="yellow" className="text-xs bg-yellow-500">
+                            <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
                               Self-Signed
                             </Badge>
                           )}

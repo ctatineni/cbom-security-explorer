@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,8 +46,8 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
   const certificateRows = useMemo((): CertificateRow[] => {
     return certificates.map((cert, index) => {
       const paths = [
-        `/etc/ssl/certs/${cert.subject.toLowerCase().replace(/[\s=,]/g, '_')}.crt`,
-        `/var/lib/ssl/${cert.subject.toLowerCase().replace(/[\s=,]/g, '_')}.pem`
+        `/etc/ssl/certs/${cert.commonName.toLowerCase().replace(/[\s=,]/g, '_')}.crt`,
+        `/var/lib/ssl/${cert.commonName.toLowerCase().replace(/[\s=,]/g, '_')}.pem`
       ];
       
       if (cert.issuer.includes('Let\'s Encrypt')) {
@@ -61,14 +60,14 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
         id: cert.id,
         appId: `APP-${String(index + 1).padStart(3, '0')}`,
         serviceName: cert.services && cert.services.length > 0 ? cert.services[0] : 'Unknown Service',
-        subject: cert.subject,
+        subject: cert.commonName,
         issuer: cert.issuer,
         paths: paths.slice(0, Math.floor(Math.random() * 3) + 1),
         source: cert.issuer.includes('Let\'s Encrypt') ? 'Let\'s Encrypt' : 
                 cert.issuer.includes('DigiCert') ? 'DigiCert' : 
                 cert.issuer.includes('Internal') ? 'Internal CA' : 'External CA',
         status: cert.isExpired ? 'expired' : (cert.daysUntilExpiry < 30 ? 'expiring' : 'valid'),
-        expiryDate: cert.expiryDate,
+        expiryDate: cert.validTo,
         daysUntilExpiry: cert.daysUntilExpiry,
         applications: cert.applications || [],
         isExpired: cert.isExpired
