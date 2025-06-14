@@ -7,37 +7,50 @@ import { ArrowRight, Search, Building, Eye, CheckCircle, Target, Server, Package
 interface WorkflowGuideProps {
   currentStep: 'search' | 'applications' | 'services' | 'components' | 'overview';
   onStepClick?: (step: string) => void;
+  hasApplicationsData?: boolean;
+  hasServicesData?: boolean;
+  hasComponentsData?: boolean;
+  selectedService?: any;
+  selectedHost?: any;
 }
 
-export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep, onStepClick }) => {
+export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ 
+  currentStep, 
+  onStepClick,
+  hasApplicationsData = false,
+  hasServicesData = false,
+  hasComponentsData = false,
+  selectedService = null,
+  selectedHost = null
+}) => {
   const steps = [
     {
       id: 'search',
       title: 'Search & Query',
       description: 'Natural language search for crypto assets',
       icon: Search,
-      completed: ['applications', 'services', 'components', 'overview'].includes(currentStep)
+      completed: hasApplicationsData
     },
     {
       id: 'applications',
       title: 'Applications',
       description: 'View all applications and risk levels',
       icon: Building,
-      completed: ['services', 'components', 'overview'].includes(currentStep)
+      completed: hasServicesData
     },
     {
       id: 'services',
       title: 'Services & Hosts',
       description: 'Code, VMs, containers analysis',
       icon: Eye,
-      completed: ['components', 'overview'].includes(currentStep)
+      completed: hasComponentsData || selectedService || selectedHost
     },
     {
       id: 'components',
       title: 'Components',
       description: 'Libraries and programming languages',
       icon: Package,
-      completed: ['overview'].includes(currentStep)
+      completed: selectedService || selectedHost
     },
     {
       id: 'overview',

@@ -1,3 +1,4 @@
+
 import { CBOMData } from '@/data/mockCBOMData';
 import { ComponentsDrillDownData } from '@/types/cbom';
 
@@ -150,14 +151,47 @@ export const generateComponentsDrillDown = (
 export const getFilteredCBOMData = (selectedService: any, cbomData: any, selectedApplication: any) => {
   if (!selectedService || !cbomData || !selectedApplication) return null;
   
+  // Handle both services and hosts
+  const isHost = selectedService.type && ['vm', 'container', 'bare-metal', 'kubernetes-pod'].includes(selectedService.type);
+  
+  let cryptoAlgorithms = [];
+  let libraries = [];
+  
+  if (isHost) {
+    // For hosts, use their libraries and create mock crypto algorithms
+    libraries = selectedService.libraries || [];
+    cryptoAlgorithms = libraries.flatMap(lib => 
+      lib.algorithms?.map(algoId => ({
+        id: algoId,
+        name: algoId.toUpperCase(),
+        type: 'Unknown',
+        keySize: '256-bit',
+        riskLevel: 'medium',
+        deprecated: false,
+        purpose: `Used by ${lib.name}`,
+        usageLocations: [{
+          file: `${selectedService.name}/${lib.name}`,
+          line: 1,
+          function: 'main',
+          usage: `Host runtime dependency`
+        }],
+        recommendations: [`Review ${algoId} usage in ${selectedService.name}`]
+      })) || []
+    );
+  } else {
+    // For services, use their crypto algorithms and libraries directly
+    cryptoAlgorithms = selectedService.cryptoAlgorithms || [];
+    libraries = selectedService.libraries || [];
+  }
+  
   return {
     application: {
       name: selectedService.name,
       version: selectedService.version || '1.0.0',
-      riskLevel: selectedService.riskLevel
+      riskLevel: selectedService.riskLevel || 'medium'
     },
-    cryptoAlgorithms: selectedService.cryptoAlgorithms,
-    libraries: selectedService.libraries,
-    metrics: cbomData.metrics
+    cryptoAlgorithms,
+    libraries,
+    metrics: cbomData.metrics || { secure: 0, warnings: 0, critical: 0 }
   };
 };

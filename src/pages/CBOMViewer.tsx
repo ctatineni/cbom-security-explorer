@@ -82,7 +82,7 @@ const CBOMViewer = () => {
     }
   };
 
-  const filteredCBOMData = getFilteredCBOMData(state.selectedService, state.cbomData, state.selectedApplication);
+  const filteredCBOMData = getFilteredCBOMData(state.selectedService || state.selectedHost, state.cbomData, state.selectedApplication);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,6 +108,11 @@ const CBOMViewer = () => {
               <WorkflowGuide
                 currentStep={getCurrentWorkflowStep()}
                 onStepClick={handleWorkflowStepClick}
+                hasApplicationsData={!!state.cbomData}
+                hasServicesData={!!state.selectedApplication}
+                hasComponentsData={!!state.componentsDrillDownData}
+                selectedService={state.selectedService}
+                selectedHost={state.selectedHost}
               />
             )}
             {state.searchMode === 'crypto-materials' && (
@@ -305,12 +310,12 @@ const CBOMViewer = () => {
             </div>
           )}
 
-          {state.activeTab === 'overview' && state.selectedService && filteredCBOMData && (
+          {state.activeTab === 'overview' && (state.selectedService || state.selectedHost) && filteredCBOMData && (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-400px)]">
               <div className="lg:col-span-3">
                 <Card className="h-full">
                   <CardHeader>
-                    <CardTitle>Cryptographic Dependencies - {state.selectedService.name}</CardTitle>
+                    <CardTitle>Cryptographic Dependencies - {(state.selectedService || state.selectedHost)?.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="h-[calc(100%-80px)]">
                     <CBOMGraph 
