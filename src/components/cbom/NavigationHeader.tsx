@@ -11,7 +11,7 @@ import {
   Package, 
   Key, 
   BarChart3,
-  ChevronRight 
+  RotateCcw
 } from 'lucide-react';
 
 interface NavigationHeaderProps {
@@ -115,10 +115,16 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
 
   const navItems = getNavItems();
 
+  const handleReset = () => {
+    // Reset to search page
+    onTabChange('search-selection');
+    // The parent component will handle clearing the data
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-6 py-4">
-        {/* Top row - Title and back button */}
+        {/* Top row - Title and controls */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             {showBackButton && onBack && (
@@ -137,40 +143,20 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
               <p className="text-sm text-gray-600">Comprehensive analysis of cryptographic components and materials</p>
             </div>
           </div>
+          
+          {/* Reset button - only show if we have data */}
+          {(hasApplicationsData || hasComponentsData || hasCryptoData) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              New Search
+            </Button>
+          )}
         </div>
-
-        {/* Navigation breadcrumb */}
-        {navItems.length > 1 && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            {navItems.map((item, index) => {
-              const IconComponent = item.icon;
-              const isActive = activeTab === item.id;
-              const isLast = index === navItems.length - 1;
-
-              return (
-                <React.Fragment key={item.id}>
-                  <button
-                    onClick={() => onTabChange(item.id)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                      isActive 
-                        ? 'bg-blue-100 text-blue-700 font-medium' 
-                        : 'hover:bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    {item.label}
-                    {item.badge && (
-                      <Badge variant="secondary" className="ml-1 text-xs">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </button>
-                  {!isLast && <ChevronRight className="h-4 w-4 text-gray-400" />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
 
         {/* Action buttons for current context */}
         <div className="flex items-center gap-3">

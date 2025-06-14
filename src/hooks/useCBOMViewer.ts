@@ -236,7 +236,24 @@ export const useCBOMViewer = () => {
   };
 
   const setActiveTab = (tab: string) => {
-    setState(prev => ({ ...prev, activeTab: tab }));
+    // If navigating to search-selection, reset all data
+    if (tab === 'search-selection') {
+      setState(prev => ({
+        ...prev,
+        activeTab: tab,
+        cbomData: null,
+        cryptoMaterialsData: null,
+        componentsDrillDownData: null,
+        selectedApplication: null,
+        selectedService: null,
+        selectedNode: null,
+        selectedHost: null,
+        lastSearchQuery: '',
+        showServiceDetails: false
+      }));
+    } else {
+      setState(prev => ({ ...prev, activeTab: tab }));
+    }
   };
 
   const setShowServiceDetails = (show: boolean) => {
