@@ -38,7 +38,6 @@ export const ApplicationTreeItem: React.FC<ApplicationTreeItemProps> = ({
   onApplicationDetailClick 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [servicePaginationPage, setServicePaginationPage] = useState(1);
 
   // Pagination for services within the application
   const {
@@ -91,22 +90,22 @@ export const ApplicationTreeItem: React.FC<ApplicationTreeItemProps> = ({
   };
 
   return (
-    <div className="border rounded">
-      <div className="p-3 bg-gray-50">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 flex-1">
+    <div className="border rounded bg-gray-50">
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <Building className="h-4 w-4 text-blue-600 flex-shrink-0" />
             <span className="font-medium text-sm truncate">{application.name}</span>
             <Badge variant="outline" className="text-xs flex-shrink-0">
               {application.services.length} services
             </Badge>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
             {totalPages > 1 && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 flex-shrink-0">
                 {startIndex}-{endIndex} of {totalItems}
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               size="sm"
               variant="ghost"
@@ -132,7 +131,7 @@ export const ApplicationTreeItem: React.FC<ApplicationTreeItemProps> = ({
         
         <Collapsible open={isExpanded}>
           <CollapsibleContent>
-            <div className="space-y-2 mt-2">
+            <div className="space-y-2 mt-3 pl-6">
               {paginatedServices.map((service, serviceIndex) => (
                 <ServiceTreeItem
                   key={serviceIndex}
