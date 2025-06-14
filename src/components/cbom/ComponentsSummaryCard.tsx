@@ -28,7 +28,7 @@ export const ComponentsSummaryCard: React.FC<ComponentsSummaryCardProps> = ({ da
         </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-5 gap-4 mb-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{data.components.length}</div>
             <div className="text-sm text-gray-500">Total Components</div>
