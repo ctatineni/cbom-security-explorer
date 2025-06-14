@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,7 @@ import { FlowIndicator } from '@/components/cbom/FlowIndicator';
 import { ComponentsViewGuide } from '@/components/cbom/ComponentsViewGuide';
 import { useCBOMViewer } from '@/hooks/useCBOMViewer';
 import { getFilteredCBOMData } from '@/utils/cbomDataUtils';
+import { CryptoMaterialsWorkflow } from '@/components/cbom/CryptoMaterialsWorkflow';
 
 const CBOMViewer = () => {
   const { state, handlers } = useCBOMViewer();
@@ -97,10 +97,26 @@ const CBOMViewer = () => {
       <div className="container mx-auto px-6 py-6 space-y-6">
         {/* Workflow Guide Section */}
         {hasDataAvailable && state.activeTab !== 'search-selection' && (
-          <WorkflowGuide
-            currentStep={getCurrentWorkflowStep()}
-            onStepClick={handleWorkflowStepClick}
-          />
+          <>
+            {state.searchMode === 'cbom' && (
+              <WorkflowGuide
+                currentStep={getCurrentWorkflowStep()}
+                onStepClick={handleWorkflowStepClick}
+              />
+            )}
+            {state.searchMode === 'crypto-materials' && (
+              <CryptoMaterialsWorkflow
+                currentStep={state.activeTab === 'crypto-materials-results' ? 'results' : 'search'}
+                onStepClick={(step) => {
+                  if (step === 'search') {
+                    handlers.setActiveTab('search-selection');
+                  } else if (step === 'results' && state.cryptoMaterialsData) {
+                    handlers.setActiveTab('crypto-materials-results');
+                  }
+                }}
+              />
+            )}
+          </>
         )}
 
         {/* Search Summary Section */}
