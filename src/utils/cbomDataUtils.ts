@@ -158,26 +158,27 @@ export const getFilteredCBOMData = (selectedService: any, cbomData: any, selecte
   let libraries = [];
   
   if (isHost) {
-    // For hosts, use their libraries and create mock crypto algorithms
+    // For hosts, only include libraries and no crypto algorithms
     libraries = selectedService.libraries || [];
-    cryptoAlgorithms = libraries.flatMap(lib => 
-      lib.algorithms?.map(algoId => ({
-        id: algoId,
-        name: algoId.toUpperCase(),
-        type: 'Unknown',
-        keySize: '256-bit',
-        riskLevel: 'medium',
-        deprecated: false,
-        purpose: `Used by ${lib.name}`,
+    cryptoAlgorithms = []; // No crypto algorithms for hosts
+    
+    // Add programming language as a special "library" entry for visualization
+    if (selectedService.programmingLanguage) {
+      libraries.push({
+        id: `lang-${selectedService.programmingLanguage}`,
+        name: selectedService.programmingLanguage,
+        version: 'Runtime',
+        type: 'language',
+        algorithms: [],
+        functions: [],
         usageLocations: [{
-          file: `${selectedService.name}/${lib.name}`,
+          file: `${selectedService.name}/runtime`,
           line: 1,
           function: 'main',
-          usage: `Host runtime dependency`
-        }],
-        recommendations: [`Review ${algoId} usage in ${selectedService.name}`]
-      })) || []
-    );
+          usage: 'Primary runtime language'
+        }]
+      });
+    }
   } else {
     // For services, use their crypto algorithms and libraries directly
     cryptoAlgorithms = selectedService.cryptoAlgorithms || [];
