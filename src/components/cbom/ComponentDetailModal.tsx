@@ -6,8 +6,7 @@ import {
 } from '@/components/ui/dialog';
 import { ComponentDetailHeader } from './ComponentDetailHeader';
 import { ComponentOverviewCard } from './ComponentOverviewCard';
-import { ComponentApplicationsCard } from './ComponentApplicationsCard';
-import { ComponentServicesCard } from './ComponentServicesCard';
+import { ApplicationDetailCard } from './ApplicationDetailCard';
 
 interface ComponentDetailModalProps {
   component: {
@@ -52,8 +51,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
 
         <div className="space-y-6">
           <ComponentOverviewCard component={component} />
-          <ComponentApplicationsCard component={component} />
-          <ComponentServicesCard component={component} />
+          <ApplicationDetailCard component={component} />
         </div>
       </DialogContent>
     </Dialog>
