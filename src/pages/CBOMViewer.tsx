@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Building, Layers, FileKey } from 'lucide-react';
+import { Shield, Building, Layers, FileKey, Server } from 'lucide-react';
 import { CBOMGraph } from '@/components/cbom/CBOMGraph';
 import { CBOMSidebar } from '@/components/cbom/CBOMSidebar';
 import { NavigationHeader } from '@/components/cbom/NavigationHeader';
@@ -21,6 +21,7 @@ import { ComponentsViewGuide } from '@/components/cbom/ComponentsViewGuide';
 import { useCBOMViewer } from '@/hooks/useCBOMViewer';
 import { getFilteredCBOMData } from '@/utils/cbomDataUtils';
 import { CryptoMaterialsWorkflow } from '@/components/cbom/CryptoMaterialsWorkflow';
+import { HostsGrid } from '@/components/cbom/HostsGrid';
 
 const CBOMViewer = () => {
   const { state, handlers } = useCBOMViewer();
@@ -39,9 +40,15 @@ const CBOMViewer = () => {
       case 'components-analysis':
         return { onBack: handlers.handleBackToSearch, showBackButton: true };
       case 'services':
+      case 'hosts':
         return { onBack: handlers.handleBackToApplications, showBackButton: true };
       case 'overview':
-        return { onBack: handlers.handleBackToServices, showBackButton: true };
+        if (state.selectedService) {
+          return { onBack: handlers.handleBackToServices, showBackButton: true };
+        } else if (state.selectedHost) {
+          return { onBack: handlers.handleBackToHosts, showBackButton: true };
+        }
+        return { showBackButton: false };
       default:
         return { showBackButton: false };
     }
@@ -52,6 +59,7 @@ const CBOMViewer = () => {
     if (state.activeTab === 'applications') return 'applications';
     if (state.activeTab === 'components-analysis') return 'components';
     if (state.activeTab === 'services') return 'services';
+    if (state.activeTab === 'hosts') return 'hosts';
     if (state.activeTab === 'overview') return 'overview';
     return 'search';
   };
@@ -70,8 +78,11 @@ const CBOMViewer = () => {
       case 'services':
         if (state.selectedApplication) handlers.setActiveTab('services');
         break;
+      case 'hosts':
+        if (state.selectedApplication) handlers.setActiveTab('hosts');
+        break;
       case 'overview':
-        if (state.selectedService) handlers.setActiveTab('overview');
+        if (state.selectedService || state.selectedHost) handlers.setActiveTab('overview');
         break;
     }
   };
@@ -276,6 +287,24 @@ const CBOMViewer = () => {
                   selectedService={state.selectedService}
                   onServiceSelect={handlers.handleServiceSelectAndNavigate}
                   onServiceDetails={handlers.handleServiceDetails}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {state.activeTab === 'hosts' && state.selectedApplication && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Server className="h-5 w-5" />
+                  Hosts in {state.selectedApplication.name} ({state.selectedApplication.hosts?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HostsGrid
+                  hosts={state.selectedApplication.hosts || []}
+                  selectedHost={state.selectedHost}
+                  onHostSelect={handlers.handleHostSelect}
                 />
               </CardContent>
             </Card>

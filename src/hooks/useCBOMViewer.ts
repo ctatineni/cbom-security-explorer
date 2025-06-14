@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CBOMViewerState, DataSource } from '@/types/cbom';
 import { mockCBOMData, Application, Service } from '@/data/mockCBOMData';
@@ -14,6 +13,7 @@ export const useCBOMViewer = () => {
     selectedApplication: null,
     selectedNode: null,
     selectedService: null,
+    selectedHost: null,
     loading: false,
     showServiceDetails: false,
     activeTab: 'search-selection',
@@ -154,6 +154,7 @@ export const useCBOMViewer = () => {
       selectedApplication: application,
       selectedService: null,
       selectedNode: null,
+      selectedHost: null,
       activeTab: 'services'
     }));
   };
@@ -167,6 +168,7 @@ export const useCBOMViewer = () => {
       ...prev,
       selectedService: service,
       selectedNode: null,
+      selectedHost: null,
       activeTab: 'overview'
     }));
   };
@@ -179,13 +181,24 @@ export const useCBOMViewer = () => {
     }));
   };
 
+  const handleHostSelect = (host: any) => {
+    setState(prev => ({
+      ...prev,
+      selectedHost: host,
+      selectedService: null,
+      selectedNode: null,
+      activeTab: 'overview'
+    }));
+  };
+
   const handleBackToSearch = () => {
     setState(prev => ({
       ...prev,
       activeTab: 'search-selection',
       selectedApplication: null,
       selectedService: null,
-      selectedNode: null
+      selectedNode: null,
+      selectedHost: null
     }));
   };
 
@@ -194,7 +207,8 @@ export const useCBOMViewer = () => {
       ...prev,
       activeTab: 'applications',
       selectedService: null,
-      selectedNode: null
+      selectedNode: null,
+      selectedHost: null
     }));
   };
 
@@ -203,6 +217,16 @@ export const useCBOMViewer = () => {
       ...prev,
       activeTab: 'services',
       selectedService: null,
+      selectedNode: null,
+      selectedHost: null
+    }));
+  };
+
+  const handleBackToHosts = () => {
+    setState(prev => ({
+      ...prev,
+      activeTab: 'hosts',
+      selectedHost: null,
       selectedNode: null
     }));
   };
@@ -229,9 +253,11 @@ export const useCBOMViewer = () => {
       handleNodeSelect,
       handleServiceSelectAndNavigate,
       handleServiceDetails,
+      handleHostSelect,
       handleBackToSearch,
       handleBackToApplications,
       handleBackToServices,
+      handleBackToHosts,
       setSearchMode,
       setActiveTab,
       setShowServiceDetails

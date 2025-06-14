@@ -1,4 +1,3 @@
-
 export interface CryptoAlgorithm {
   id: string;
   name: string;
@@ -82,6 +81,22 @@ export interface Service {
   codePatterns: CodePattern[];
 }
 
+export interface Host {
+  id: string;
+  name: string;
+  type: 'vm' | 'container' | 'bare-metal' | 'kubernetes-pod';
+  version?: string;
+  description: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  applicationId: string;
+  libraries: Library[];
+  lastScanned: string;
+  ipAddress?: string;
+  operatingSystem?: string;
+  containerImage?: string;
+  kubernetesNamespace?: string;
+}
+
 export interface Application {
   id: string;
   name: string;
@@ -90,6 +105,7 @@ export interface Application {
   riskLevel: 'low' | 'medium' | 'high';
   lastAnalyzed: string;
   services: Service[];
+  hosts: Host[];
 }
 
 export interface CBOMData {
@@ -292,6 +308,49 @@ const sampleRecommendations: Recommendation[] = [
   }
 ];
 
+// Generate mock hosts for applications
+const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
+  const hosts: Host[] = [];
+  const hostCount = Math.floor(Math.random() * 5) + 2; // 2-6 hosts per app
+  const hostTypes = ['vm', 'container', 'bare-metal', 'kubernetes-pod'] as const;
+  const osTypes = ['Ubuntu 20.04', 'CentOS 8', 'Alpine Linux', 'Windows Server 2019', 'RHEL 8'];
+  
+  for (let i = 0; i < hostCount; i++) {
+    const hostType = hostTypes[Math.floor(Math.random() * hostTypes.length)];
+    const riskLevels = ['low', 'medium', 'high'] as const;
+    
+    // Randomly assign some libraries to each host
+    const hostLibraries = sampleLibraries
+      .filter(() => Math.random() > 0.5)
+      .slice(0, Math.floor(Math.random() * 3) + 1);
+    
+    const host: Host = {
+      id: `host-${applicationId}-${i}`,
+      name: `${hostType}-${i + 1}`,
+      type: hostType,
+      description: `${hostType.charAt(0).toUpperCase() + hostType.slice(1)} hosting application components`,
+      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+      applicationId,
+      libraries: hostLibraries,
+      lastScanned: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      ipAddress: `192.168.${appIndex + 1}.${i + 10}`,
+      operatingSystem: osTypes[Math.floor(Math.random() * osTypes.length)]
+    };
+    
+    if (hostType === 'container') {
+      host.containerImage = `app-${appIndex}:${Math.floor(Math.random() * 10) + 1}.0`;
+    }
+    
+    if (hostType === 'kubernetes-pod') {
+      host.kubernetesNamespace = `app-${appIndex}-ns`;
+    }
+    
+    hosts.push(host);
+  }
+  
+  return hosts;
+};
+
 // Generate mock applications with the new structure
 const generateMockApplications = (): Application[] => {
   const applications: Application[] = [];
@@ -343,6 +402,8 @@ const generateMockApplications = (): Application[] => {
       });
     }
     
+    const hosts = generateMockHosts(`app-${appIndex}`, appIndex);
+    
     applications.push({
       id: `app-${appIndex}`,
       name: appName,
@@ -350,7 +411,8 @@ const generateMockApplications = (): Application[] => {
       description: `Enterprise ${appName.toLowerCase()} with comprehensive security features`,
       riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
       lastAnalyzed: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      services
+      services,
+      hosts
     });
   });
   

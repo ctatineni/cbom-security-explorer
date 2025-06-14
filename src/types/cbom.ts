@@ -1,5 +1,5 @@
 
-import { Application, Service, CBOMData } from '@/data/mockCBOMData';
+import { Application, Service, CBOMData, Host } from '@/data/mockCBOMData';
 import { CryptoMaterialsData } from '@/data/mockCryptoMaterialsData';
 
 export interface DataSource {
@@ -25,6 +25,7 @@ export interface CBOMViewerState {
   selectedApplication: Application | null;
   selectedNode: any;
   selectedService: Service | null;
+  selectedHost: Host | null;
   loading: boolean;
   showServiceDetails: boolean;
   activeTab: string;
