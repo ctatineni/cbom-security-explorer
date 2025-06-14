@@ -26,9 +26,12 @@ import { HostsGrid } from '@/components/cbom/HostsGrid';
 const CBOMViewer = () => {
   const { state, handlers } = useCBOMViewer();
 
-  const getCurrentServices = () => {
-    if (!state.selectedApplication) return [];
-    return state.selectedApplication.services;
+  const getCurrentServicesAndHosts = () => {
+    if (!state.selectedApplication) return { services: [], hosts: [] };
+    return {
+      services: state.selectedApplication.services,
+      hosts: state.selectedApplication.hosts || []
+    };
   };
 
   const hasDataAvailable = state.cbomData || state.cryptoMaterialsData;
@@ -37,16 +40,12 @@ const CBOMViewer = () => {
     switch (state.activeTab) {
       case 'applications':
       case 'crypto-materials-results':
-      case 'components-analysis':
         return { onBack: handlers.handleBackToSearch, showBackButton: true };
       case 'services':
-      case 'hosts':
         return { onBack: handlers.handleBackToApplications, showBackButton: true };
       case 'overview':
-        if (state.selectedService) {
+        if (state.selectedService || state.selectedHost) {
           return { onBack: handlers.handleBackToServices, showBackButton: true };
-        } else if (state.selectedHost) {
-          return { onBack: handlers.handleBackToHosts, showBackButton: true };
         }
         return { showBackButton: false };
       default:
@@ -57,9 +56,7 @@ const CBOMViewer = () => {
   const getCurrentWorkflowStep = () => {
     if (state.activeTab === 'search-selection') return 'search';
     if (state.activeTab === 'applications') return 'applications';
-    if (state.activeTab === 'components-analysis') return 'components';
-    if (state.activeTab === 'services') return 'services';
-    if (state.activeTab === 'hosts') return 'hosts';
+    if (state.activeTab === 'services' || state.activeTab === 'hosts') return 'services';
     if (state.activeTab === 'overview') return 'overview';
     return 'search';
   };
@@ -72,14 +69,8 @@ const CBOMViewer = () => {
       case 'applications':
         if (state.cbomData) handlers.setActiveTab('applications');
         break;
-      case 'components':
-        if (state.componentsDrillDownData) handlers.setActiveTab('components-analysis');
-        break;
       case 'services':
         if (state.selectedApplication) handlers.setActiveTab('services');
-        break;
-      case 'hosts':
-        if (state.selectedApplication) handlers.setActiveTab('hosts');
         break;
       case 'overview':
         if (state.selectedService || state.selectedHost) handlers.setActiveTab('overview');
@@ -274,40 +265,40 @@ const CBOMViewer = () => {
           )}
 
           {state.activeTab === 'services' && state.selectedApplication && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  Services in {state.selectedApplication.name} ({state.selectedApplication.services.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <VirtualizedServicesGrid
-                  services={getCurrentServices()}
-                  selectedService={state.selectedService}
-                  onServiceSelect={handlers.handleServiceSelectAndNavigate}
-                  onServiceDetails={handlers.handleServiceDetails}
-                />
-              </CardContent>
-            </Card>
-          )}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layers className="h-5 w-5" />
+                    Services in {state.selectedApplication.name} ({state.selectedApplication.services.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VirtualizedServicesGrid
+                    services={getCurrentServicesAndHosts().services}
+                    selectedService={state.selectedService}
+                    onServiceSelect={handlers.handleServiceSelectAndNavigate}
+                    onServiceDetails={handlers.handleServiceDetails}
+                  />
+                </CardContent>
+              </Card>
 
-          {state.activeTab === 'hosts' && state.selectedApplication && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Server className="h-5 w-5" />
-                  Hosts in {state.selectedApplication.name} ({state.selectedApplication.hosts?.length || 0})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <HostsGrid
-                  hosts={state.selectedApplication.hosts || []}
-                  selectedHost={state.selectedHost}
-                  onHostSelect={handlers.handleHostSelect}
-                />
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    Hosts in {state.selectedApplication.name} ({state.selectedApplication.hosts?.length || 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HostsGrid
+                    hosts={getCurrentServicesAndHosts().hosts}
+                    selectedHost={state.selectedHost}
+                    onHostSelect={handlers.handleHostSelect}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {state.activeTab === 'overview' && state.selectedService && filteredCBOMData && (
