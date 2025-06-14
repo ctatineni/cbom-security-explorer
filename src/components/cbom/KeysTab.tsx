@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,6 @@ interface KeyRow {
   size: string;
   source: string;
   keyType: string;
-  riskLevel: string;
   status: string;
   createdDate: string;
   applications: string[];
@@ -31,6 +30,23 @@ interface KeyRow {
 }
 
 const ITEMS_PER_PAGE = 50;
+
+// Debounce hook
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
   const [searchFilter, setSearchFilter] = useState('');
@@ -44,8 +60,14 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Debounce search to prevent excessive filtering
+  const debouncedSearchFilter = useDebounce(searchFilter, 300);
+
+  // Memoize key rows transformation
   const keyRows = useMemo((): KeyRow[] => {
+    console.log('Transforming key rows...');
     return keys.map((key, index) => {
       const paths = [
         `/home/user/.ssh/${key.name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -69,7 +91,6 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
         source: key.location || 'Generated',
         keyType: key.type,
         status: key.isActive ? 'active' : 'inactive',
-        riskLevel: !key.isActive || key.keySize < 2048 ? 'high' : (key.keySize < 4096 ? 'medium' : 'low'),
         createdDate: key.createdDate || 'Unknown',
         applications: key.applications || [],
         isActive: key.isActive
@@ -77,68 +98,65 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
     });
   }, [keys]);
 
+  // Optimized filter options calculation
   const filterOptions = useMemo(() => {
+    console.log('Calculating filter options...');
     const getUniqueValues = (values: string[]): string[] => {
       return [...new Set(values.filter(value => value && value.trim() !== ''))];
     };
 
-    const filtered = keyRows.filter(row => {
-      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (keyTypeFilter !== 'all' && row.keyType !== keyTypeFilter) return false;
-      if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
-      if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
-      if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
-      return true;
-    });
-
     return {
-      statuses: getUniqueValues(filtered.map(row => row.status)),
-      keyTypes: getUniqueValues(filtered.map(row => row.keyType)),
-      sources: getUniqueValues(filtered.map(row => row.source)),
-      applications: getUniqueValues(filtered.flatMap(row => row.applications)),
-      services: getUniqueValues(filtered.map(row => row.serviceName))
+      statuses: getUniqueValues(keyRows.map(row => row.status)),
+      keyTypes: getUniqueValues(keyRows.map(row => row.keyType)),
+      sources: getUniqueValues(keyRows.map(row => row.source)),
+      applications: getUniqueValues(keyRows.flatMap(row => row.applications)),
+      services: getUniqueValues(keyRows.map(row => row.serviceName))
     };
-  }, [keyRows, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter]);
+  }, [keyRows]);
 
+  // Optimized filtering and sorting
   const filteredAndSortedRows = useMemo(() => {
-    let filtered = keyRows.filter(row => {
-      if (!searchFilter) return true;
-      
-      if (searchField === 'all') {
-        return Object.values(row).some(value => 
-          String(value).toLowerCase().includes(searchFilter.toLowerCase()) ||
-          (Array.isArray(value) && value.some(v => String(v).toLowerCase().includes(searchFilter.toLowerCase())))
-        );
-      } else {
-        const fieldValue = row[searchField as keyof KeyRow];
-        if (Array.isArray(fieldValue)) {
-          return fieldValue.some(v => String(v).toLowerCase().includes(searchFilter.toLowerCase()));
-        }
-        return String(fieldValue).toLowerCase().includes(searchFilter.toLowerCase());
-      }
-    }).filter(row => {
-      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (keyTypeFilter !== 'all' && row.keyType !== keyTypeFilter) return false;
-      if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
-      if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
-      if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
-      return true;
-    });
+    console.log('Filtering and sorting rows...');
+    setIsProcessing(true);
+    
+    let filtered = keyRows;
 
-    // Notify parent component about filter changes
-    if (onFiltersChange) {
-      const currentFilters = {
-        search: searchFilter,
-        searchField,
-        status: statusFilter,
-        keyType: keyTypeFilter,
-        source: sourceFilter,
-        application: applicationFilter,
-        service: serviceFilter
-      };
-      onFiltersChange(currentFilters);
+    // Apply search filter
+    if (debouncedSearchFilter) {
+      filtered = filtered.filter(row => {
+        if (searchField === 'all') {
+          return Object.values(row).some(value => 
+            String(value).toLowerCase().includes(debouncedSearchFilter.toLowerCase()) ||
+            (Array.isArray(value) && value.some(v => String(v).toLowerCase().includes(debouncedSearchFilter.toLowerCase())))
+          );
+        } else {
+          const fieldValue = row[searchField as keyof KeyRow];
+          if (Array.isArray(fieldValue)) {
+            return fieldValue.some(v => String(v).toLowerCase().includes(debouncedSearchFilter.toLowerCase()));
+          }
+          return String(fieldValue).toLowerCase().includes(debouncedSearchFilter.toLowerCase());
+        }
+      });
     }
 
+    // Apply other filters
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(row => row.status === statusFilter);
+    }
+    if (keyTypeFilter !== 'all') {
+      filtered = filtered.filter(row => row.keyType === keyTypeFilter);
+    }
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(row => row.source === sourceFilter);
+    }
+    if (applicationFilter !== 'all') {
+      filtered = filtered.filter(row => row.applications.includes(applicationFilter));
+    }
+    if (serviceFilter !== 'all') {
+      filtered = filtered.filter(row => row.serviceName === serviceFilter);
+    }
+
+    // Sort
     filtered.sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
@@ -158,14 +176,31 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
+    setTimeout(() => setIsProcessing(false), 100);
     return filtered;
-  }, [keyRows, searchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection, onFiltersChange]);
+  }, [keyRows, debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, sortField, sortDirection]);
+
+  // Notify parent about filter changes
+  useEffect(() => {
+    if (onFiltersChange) {
+      const currentFilters = {
+        search: debouncedSearchFilter,
+        searchField,
+        status: statusFilter,
+        keyType: keyTypeFilter,
+        source: sourceFilter,
+        application: applicationFilter,
+        service: serviceFilter
+      };
+      onFiltersChange(currentFilters);
+    }
+  }, [debouncedSearchFilter, searchField, statusFilter, keyTypeFilter, sourceFilter, applicationFilter, serviceFilter, onFiltersChange]);
 
   const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchFilter('');
     setSearchField('all');
     setStatusFilter('all');
@@ -174,23 +209,23 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
     setApplicationFilter('all');
     setServiceFilter('all');
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSort = (field: keyof KeyRow) => {
+  const handleSort = useCallback((field: keyof KeyRow) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
+  }, [sortField, sortDirection]);
 
-  const getSortIcon = (field: keyof KeyRow) => {
+  const getSortIcon = useCallback((field: keyof KeyRow) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
     return <ArrowUpDown className={`h-4 w-4 ${sortDirection === 'asc' ? 'text-blue-600' : 'text-blue-600 rotate-180'}`} />;
-  };
+  }, [sortField, sortDirection]);
 
-  const togglePathExpansion = (rowId: string) => {
+  const togglePathExpansion = useCallback((rowId: string) => {
     const newExpanded = new Set(expandedPaths);
     if (newExpanded.has(rowId)) {
       newExpanded.delete(rowId);
@@ -198,9 +233,9 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
       newExpanded.add(rowId);
     }
     setExpandedPaths(newExpanded);
-  };
+  }, [expandedPaths]);
 
-  const renderPaths = (row: KeyRow) => {
+  const renderPaths = useCallback((row: KeyRow) => {
     const isExpanded = expandedPaths.has(row.id);
     const visiblePaths = isExpanded ? row.paths : row.paths.slice(0, 1);
     
@@ -224,30 +259,20 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
         )}
       </div>
     );
-  };
-
-  const getRiskBadge = (riskLevel: string) => {
-    const riskConfig = {
-      low: { variant: 'secondary' as const, color: 'text-green-600' },
-      medium: { variant: 'default' as const, color: 'text-yellow-600' },
-      high: { variant: 'destructive' as const, color: 'text-red-600' }
-    };
-    
-    const config = riskConfig[riskLevel as keyof typeof riskConfig] || riskConfig.low;
-    
-    return (
-      <Badge variant={config.variant} className="text-xs">
-        <Shield className={`h-3 w-3 mr-1 ${config.color}`} />
-        {riskLevel}
-      </Badge>
-    );
-  };
+  }, [expandedPaths, togglePathExpansion]);
 
   return (
     <div className="space-y-4">
+      {/* Processing indicator */}
+      {isProcessing && (
+        <div className="text-center text-sm text-gray-500 py-2">
+          Processing filters...
+        </div>
+      )}
+
       {/* Enhanced Filters */}
       <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Search Field</label>
             <Select value={searchField} onValueChange={setSearchField}>
@@ -318,21 +343,6 @@ export const KeysTab: React.FC<KeysTabProps> = ({ keys, onFiltersChange }) => {
                 <SelectItem value="all">All Types</SelectItem>
                 {filterOptions.keyTypes.map(type => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-2 block">Source</label>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Sources" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                {filterOptions.sources.map(source => (
-                  <SelectItem key={source} value={source}>{source}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

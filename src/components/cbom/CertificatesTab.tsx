@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,23 @@ interface CertificateRow {
 
 const ITEMS_PER_PAGE = 50;
 
+// Debounce hook
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, onFiltersChange }) => {
   const [searchFilter, setSearchFilter] = useState('');
   const [searchField, setSearchField] = useState('all');
@@ -42,8 +60,14 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Debounce search to prevent excessive filtering
+  const debouncedSearchFilter = useDebounce(searchFilter, 300);
+
+  // Memoize certificate rows transformation
   const certificateRows = useMemo((): CertificateRow[] => {
+    console.log('Transforming certificate rows...');
     return certificates.map((cert, index) => {
       const paths = [
         `/etc/ssl/certs/${cert.commonName.toLowerCase().replace(/[\s=,]/g, '_')}.crt`,
@@ -75,68 +99,65 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
     });
   }, [certificates]);
 
+  // Optimized filter options calculation
   const filterOptions = useMemo(() => {
+    console.log('Calculating filter options...');
     const getUniqueValues = (values: string[]): string[] => {
       return [...new Set(values.filter(value => value && value.trim() !== ''))];
     };
 
-    const filtered = certificateRows.filter(row => {
-      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
-      if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
-      if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
-      if (issuerFilter !== 'all' && !row.issuer.includes(issuerFilter)) return false;
-      return true;
-    });
-
     return {
-      statuses: getUniqueValues(filtered.map(row => row.status)),
-      sources: getUniqueValues(filtered.map(row => row.source)),
-      applications: getUniqueValues(filtered.flatMap(row => row.applications)),
-      services: getUniqueValues(filtered.map(row => row.serviceName)),
-      issuers: getUniqueValues(filtered.map(row => row.issuer))
+      statuses: getUniqueValues(certificateRows.map(row => row.status)),
+      sources: getUniqueValues(certificateRows.map(row => row.source)),
+      applications: getUniqueValues(certificateRows.flatMap(row => row.applications)),
+      services: getUniqueValues(certificateRows.map(row => row.serviceName)),
+      issuers: getUniqueValues(certificateRows.map(row => row.issuer))
     };
-  }, [certificateRows, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter]);
+  }, [certificateRows]);
 
+  // Optimized filtering and sorting
   const filteredAndSortedRows = useMemo(() => {
-    let filtered = certificateRows.filter(row => {
-      if (!searchFilter) return true;
-      
-      if (searchField === 'all') {
-        return Object.values(row).some(value => 
-          String(value).toLowerCase().includes(searchFilter.toLowerCase()) ||
-          (Array.isArray(value) && value.some(v => String(v).toLowerCase().includes(searchFilter.toLowerCase())))
-        );
-      } else {
-        const fieldValue = row[searchField as keyof CertificateRow];
-        if (Array.isArray(fieldValue)) {
-          return fieldValue.some(v => String(v).toLowerCase().includes(searchFilter.toLowerCase()));
-        }
-        return String(fieldValue).toLowerCase().includes(searchFilter.toLowerCase());
-      }
-    }).filter(row => {
-      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (sourceFilter !== 'all' && row.source !== sourceFilter) return false;
-      if (applicationFilter !== 'all' && !row.applications.includes(applicationFilter)) return false;
-      if (serviceFilter !== 'all' && row.serviceName !== serviceFilter) return false;
-      if (issuerFilter !== 'all' && !row.issuer.includes(issuerFilter)) return false;
-      return true;
-    });
+    console.log('Filtering and sorting rows...');
+    setIsProcessing(true);
+    
+    let filtered = certificateRows;
 
-    // Notify parent component about filter changes
-    if (onFiltersChange) {
-      const currentFilters = {
-        search: searchFilter,
-        searchField,
-        status: statusFilter,
-        source: sourceFilter,
-        application: applicationFilter,
-        service: serviceFilter,
-        issuer: issuerFilter
-      };
-      onFiltersChange(currentFilters);
+    // Apply search filter
+    if (debouncedSearchFilter) {
+      filtered = filtered.filter(row => {
+        if (searchField === 'all') {
+          return Object.values(row).some(value => 
+            String(value).toLowerCase().includes(debouncedSearchFilter.toLowerCase()) ||
+            (Array.isArray(value) && value.some(v => String(v).toLowerCase().includes(debouncedSearchFilter.toLowerCase())))
+          );
+        } else {
+          const fieldValue = row[searchField as keyof CertificateRow];
+          if (Array.isArray(fieldValue)) {
+            return fieldValue.some(v => String(v).toLowerCase().includes(debouncedSearchFilter.toLowerCase()));
+          }
+          return String(fieldValue).toLowerCase().includes(debouncedSearchFilter.toLowerCase());
+        }
+      });
     }
 
+    // Apply other filters
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(row => row.status === statusFilter);
+    }
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(row => row.source === sourceFilter);
+    }
+    if (applicationFilter !== 'all') {
+      filtered = filtered.filter(row => row.applications.includes(applicationFilter));
+    }
+    if (serviceFilter !== 'all') {
+      filtered = filtered.filter(row => row.serviceName === serviceFilter);
+    }
+    if (issuerFilter !== 'all') {
+      filtered = filtered.filter(row => row.issuer.includes(issuerFilter));
+    }
+
+    // Sort
     filtered.sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
@@ -156,14 +177,31 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
+    setTimeout(() => setIsProcessing(false), 100);
     return filtered;
-  }, [certificateRows, searchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, sortField, sortDirection, onFiltersChange]);
+  }, [certificateRows, debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, sortField, sortDirection]);
+
+  // Notify parent about filter changes
+  useEffect(() => {
+    if (onFiltersChange) {
+      const currentFilters = {
+        search: debouncedSearchFilter,
+        searchField,
+        status: statusFilter,
+        source: sourceFilter,
+        application: applicationFilter,
+        service: serviceFilter,
+        issuer: issuerFilter
+      };
+      onFiltersChange(currentFilters);
+    }
+  }, [debouncedSearchFilter, searchField, statusFilter, sourceFilter, applicationFilter, serviceFilter, issuerFilter, onFiltersChange]);
 
   const totalPages = Math.ceil(filteredAndSortedRows.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRows = filteredAndSortedRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchFilter('');
     setSearchField('all');
     setStatusFilter('all');
@@ -172,23 +210,23 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
     setServiceFilter('all');
     setIssuerFilter('all');
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSort = (field: keyof CertificateRow) => {
+  const handleSort = useCallback((field: keyof CertificateRow) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
+  }, [sortField, sortDirection]);
 
-  const getSortIcon = (field: keyof CertificateRow) => {
+  const getSortIcon = useCallback((field: keyof CertificateRow) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
     return <ArrowUpDown className={`h-4 w-4 ${sortDirection === 'asc' ? 'text-blue-600' : 'text-blue-600 rotate-180'}`} />;
-  };
+  }, [sortField, sortDirection]);
 
-  const togglePathExpansion = (rowId: string) => {
+  const togglePathExpansion = useCallback((rowId: string) => {
     const newExpanded = new Set(expandedPaths);
     if (newExpanded.has(rowId)) {
       newExpanded.delete(rowId);
@@ -196,9 +234,9 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
       newExpanded.add(rowId);
     }
     setExpandedPaths(newExpanded);
-  };
+  }, [expandedPaths]);
 
-  const renderPaths = (row: CertificateRow) => {
+  const renderPaths = useCallback((row: CertificateRow) => {
     const isExpanded = expandedPaths.has(row.id);
     const visiblePaths = isExpanded ? row.paths : row.paths.slice(0, 1);
     
@@ -222,9 +260,9 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
         )}
       </div>
     );
-  };
+  }, [expandedPaths, togglePathExpansion]);
 
-  const getStatusBadge = (status: string, daysUntilExpiry: number) => {
+  const getStatusBadge = useCallback((status: string, daysUntilExpiry: number) => {
     if (status === 'expired') {
       return (
         <Badge variant="destructive" className="text-xs">
@@ -249,13 +287,20 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
         Valid ({daysUntilExpiry}d)
       </Badge>
     );
-  };
+  }, []);
 
   return (
     <div className="space-y-4">
+      {/* Processing indicator */}
+      {isProcessing && (
+        <div className="text-center text-sm text-gray-500 py-2">
+          Processing filters...
+        </div>
+      )}
+
       {/* Enhanced Filters */}
       <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Search Field</label>
             <Select value={searchField} onValueChange={setSearchField}>
@@ -326,21 +371,6 @@ export const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, 
                 <SelectItem value="all">All Sources</SelectItem>
                 {filterOptions.sources.map(source => (
                   <SelectItem key={source} value={source}>{source}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-2 block">Issuer</label>
-            <Select value={issuerFilter} onValueChange={setIssuerFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Issuers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Issuers</SelectItem>
-                {filterOptions.issuers.map(issuer => (
-                  <SelectItem key={issuer} value={issuer}>{issuer}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
