@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Key } from 'lucide-react';
 import { generateMockAlgorithmsProtocols } from '@/utils/algorithmsMockData';
+import { CBOMExpandableModal } from './CBOMExpandableModal';
+import { CBOMAlgorithmsProtocolsExpanded } from './CBOMAlgorithmsProtocolsExpanded';
 
 interface CBOMAlgorithmsProtocolsProps {
   selectedNode: any;
@@ -32,10 +34,18 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Key className="h-5 w-5" />
-          Enabled & Supported Algorithms & Protocols
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Enabled & Supported Algorithms & Protocols
+          </CardTitle>
+          <CBOMExpandableModal 
+            title="Enabled & Supported Algorithms & Protocols"
+            triggerText="View All"
+          >
+            <CBOMAlgorithmsProtocolsExpanded selectedNode={selectedNode} />
+          </CBOMExpandableModal>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {enabledSupportedAlgorithms.length > 0 && (
@@ -43,8 +53,8 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
             <div className="text-sm font-medium mb-2">
               Algorithms ({enabledSupportedAlgorithms.length})
             </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {enabledSupportedAlgorithms.map((algo, index) => (
+            <div className="space-y-2 max-h-24 overflow-y-auto">
+              {enabledSupportedAlgorithms.slice(0, 3).map((algo, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div>
                     <div className="text-sm font-medium">{algo.name}</div>
@@ -69,6 +79,11 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
                   </div>
                 </div>
               ))}
+              {enabledSupportedAlgorithms.length > 3 && (
+                <div className="text-xs text-gray-500 text-center">
+                  +{enabledSupportedAlgorithms.length - 3} more algorithms
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -78,8 +93,8 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
             <div className="text-sm font-medium mb-2">
               Protocols ({enabledSupportedProtocols.length})
             </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {enabledSupportedProtocols.map((protocol, index) => (
+            <div className="space-y-2 max-h-24 overflow-y-auto">
+              {enabledSupportedProtocols.slice(0, 3).map((protocol, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div>
                     <div className="text-sm font-medium">{protocol.name}</div>
@@ -104,6 +119,11 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
                   </div>
                 </div>
               ))}
+              {enabledSupportedProtocols.length > 3 && (
+                <div className="text-xs text-gray-500 text-center">
+                  +{enabledSupportedProtocols.length - 3} more protocols
+                </div>
+              )}
             </div>
           </div>
         )}
