@@ -1,10 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Key, Code } from 'lucide-react';
 import { AlgorithmsSearchFilters } from './AlgorithmsSearchFilters';
 import { AlgorithmsProtocolsList } from './AlgorithmsProtocolsList';
+import { ComponentAlgorithmsProtocols, filterAlgorithmsAndProtocols } from '@/utils/algorithmFilterUtils';
 
 interface AlgorithmsProtocolsCardProps {
   component: {
@@ -14,20 +14,34 @@ interface AlgorithmsProtocolsCardProps {
     isLibrary?: boolean;
     isLanguage?: boolean;
   };
+  // This will come from the CBOM data API response
+  algorithmProtocolData?: ComponentAlgorithmsProtocols;
 }
 
-export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = ({ component }) => {
+export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = ({ 
+  component, 
+  algorithmProtocolData 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [securityFilter, setSecurityFilter] = useState('all');
 
   const { algorithms, protocols } = useMemo(() => {
-    // This will be replaced with actual API call based on component name and type
+    // Use provided data or fallback to mock data for development
+    if (algorithmProtocolData) {
+      const filtered = filterAlgorithmsAndProtocols(algorithmProtocolData, 'supported');
+      return {
+        algorithms: filtered.algorithms,
+        protocols: filtered.protocols
+      };
+    }
+
+    // Fallback mock data when API data is not available
     const mockAlgorithms = [
       {
         name: "AES-256-GCM",
         type: "Symmetric Encryption",
-        status: "enabled",
-        security: "secure",
+        status: "enabled" as const,
+        security: "secure" as const,
         description: "Advanced Encryption Standard with Galois/Counter Mode",
         source: component.name,
         usageContext: "Data encryption and authentication"
@@ -35,8 +49,8 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
       {
         name: "RSA-2048",
         type: "Asymmetric Encryption", 
-        status: "supported",
-        security: "secure",
+        status: "supported" as const,
+        security: "secure" as const,
         description: "RSA public-key cryptosystem with 2048-bit key size",
         source: component.name,
         usageContext: "Key exchange and digital signatures"
@@ -47,8 +61,8 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
       {
         name: "TLS 1.3",
         type: "Transport Security",
-        status: "enabled", 
-        security: "secure",
+        status: "enabled" as const, 
+        security: "secure" as const,
         description: "Transport Layer Security protocol version 1.3",
         source: component.name,
         usageContext: "Secure network communication"
@@ -56,7 +70,7 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
     ];
 
     return { algorithms: mockAlgorithms, protocols: mockProtocols };
-  }, [component.name, component.isLanguage]);
+  }, [component.name, component.isLanguage, algorithmProtocolData]);
 
   const filterItems = (items: any[]) => {
     return items.filter(item => {
@@ -77,6 +91,9 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
   const componentTypeText = component.isLanguage ? 'programming language' : 'library';
   const icon = component.isLanguage ? <Code className="h-5 w-5" /> : <Key className="h-5 w-5" />;
 
+  // Display algorithm/protocol strings if available
+  const algorithmStrings = algorithmProtocolData?.algorithmProtocolStrings;
+
   return (
     <Card>
       <CardHeader>
@@ -87,6 +104,15 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
         <div className="text-sm text-gray-600">
           Enabled and supported cryptographic algorithms and security protocols for {componentTypeText} {component.name}
         </div>
+        
+        {algorithmStrings && (
+          <div className="text-xs text-gray-500 space-y-1 border-t pt-3">
+            <div><strong>Enabled Algorithms:</strong> {algorithmStrings.enabledAlgorithms || 'None'}</div>
+            <div><strong>Supported Algorithms:</strong> {algorithmStrings.supportedAlgorithms || 'None'}</div>
+            <div><strong>Enabled Protocols:</strong> {algorithmStrings.enabledProtocols || 'None'}</div>
+            <div><strong>Supported Protocols:</strong> {algorithmStrings.supportedProtocols || 'None'}</div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <AlgorithmsSearchFilters
