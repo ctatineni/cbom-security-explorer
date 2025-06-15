@@ -1,12 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Shield, Key, Lock, CheckCircle, XCircle, AlertTriangle, Code } from 'lucide-react';
+import { Key, Code } from 'lucide-react';
+import { generateMockAlgorithmsProtocols } from '@/utils/algorithmsMockData';
+import { AlgorithmsSearchFilters } from './AlgorithmsSearchFilters';
+import { AlgorithmsProtocolsList } from './AlgorithmsProtocolsList';
 
 interface AlgorithmsProtocolsCardProps {
   component: {
@@ -17,73 +16,6 @@ interface AlgorithmsProtocolsCardProps {
     isLanguage?: boolean;
   };
 }
-
-// Mock data for algorithms and protocols - in real app this would come from the component data
-const generateMockAlgorithmsProtocols = (componentName: string, isLanguage: boolean = false) => {
-  const baseAlgorithms = [
-    { name: 'AES-256-GCM', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'Advanced Encryption Standard with Galois/Counter Mode' },
-    { name: 'RSA-2048', type: 'Asymmetric Encryption', status: 'enabled', security: 'secure', description: 'RSA encryption with 2048-bit key' },
-    { name: 'SHA-256', type: 'Hash Function', status: 'enabled', security: 'secure', description: 'Secure Hash Algorithm 256-bit' },
-    { name: 'ECDSA-P256', type: 'Digital Signature', status: 'enabled', security: 'secure', description: 'Elliptic Curve Digital Signature Algorithm' },
-    { name: 'ChaCha20-Poly1305', type: 'Authenticated Encryption', status: 'supported', security: 'secure', description: 'ChaCha20 stream cipher with Poly1305 authenticator' },
-    { name: 'MD5', type: 'Hash Function', status: 'deprecated', security: 'vulnerable', description: 'Message Digest Algorithm 5 (deprecated)' },
-    { name: 'DES', type: 'Symmetric Encryption', status: 'deprecated', security: 'vulnerable', description: 'Data Encryption Standard (deprecated)' },
-    { name: 'RSA-1024', type: 'Asymmetric Encryption', status: 'deprecated', security: 'weak', description: 'RSA encryption with 1024-bit key (weak)' },
-    { name: 'AES-128-CBC', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'AES 128-bit Cipher Block Chaining' },
-    { name: 'AES-256-CBC', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'AES 256-bit Cipher Block Chaining' },
-    { name: 'PBKDF2', type: 'Key Derivation', status: 'enabled', security: 'secure', description: 'Password-Based Key Derivation Function 2' },
-    { name: 'HMAC-SHA256', type: 'Message Authentication', status: 'enabled', security: 'secure', description: 'Hash-based Message Authentication Code with SHA-256' },
-  ];
-
-  const baseProtocols = [
-    { name: 'TLS 1.3', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'Transport Layer Security version 1.3' },
-    { name: 'TLS 1.2', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'Transport Layer Security version 1.2' },
-    { name: 'HTTPS', type: 'Application Protocol', status: 'enabled', security: 'secure', description: 'HTTP over TLS/SSL' },
-    { name: 'SSH-2', type: 'Remote Access', status: 'enabled', security: 'secure', description: 'Secure Shell Protocol version 2' },
-    { name: 'OAuth 2.0', type: 'Authorization', status: 'enabled', security: 'secure', description: 'Open Authorization framework' },
-    { name: 'JWT', type: 'Token Format', status: 'enabled', security: 'secure', description: 'JSON Web Token' },
-    { name: 'SAML 2.0', type: 'Authentication', status: 'supported', security: 'secure', description: 'Security Assertion Markup Language' },
-    { name: 'SSL 3.0', type: 'Transport Security', status: 'deprecated', security: 'vulnerable', description: 'Secure Sockets Layer 3.0 (deprecated)' },
-    { name: 'TLS 1.0', type: 'Transport Security', status: 'deprecated', security: 'weak', description: 'Transport Layer Security 1.0 (deprecated)' },
-    { name: 'TLS 1.1', type: 'Transport Security', status: 'deprecated', security: 'weak', description: 'Transport Layer Security 1.1 (deprecated)' },
-    { name: 'WebSocket Secure', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'WebSocket over TLS' },
-    { name: 'gRPC', type: 'RPC Protocol', status: 'enabled', security: 'secure', description: 'Google Remote Procedure Call' },
-  ];
-
-  // Language-specific additions
-  if (isLanguage) {
-    const languageSpecific = {
-      'Java': [
-        { name: 'JCE', type: 'Crypto Framework', status: 'enabled', security: 'secure', description: 'Java Cryptography Extension' },
-        { name: 'Bouncy Castle', type: 'Crypto Provider', status: 'supported', security: 'secure', description: 'Third-party cryptography provider' },
-        { name: 'JSSE', type: 'Security Framework', status: 'enabled', security: 'secure', description: 'Java Secure Socket Extension' },
-      ],
-      'JavaScript': [
-        { name: 'Web Crypto API', type: 'Browser API', status: 'enabled', security: 'secure', description: 'Native browser cryptography API' },
-        { name: 'Node.js Crypto', type: 'Runtime Module', status: 'enabled', security: 'secure', description: 'Node.js built-in crypto module' },
-        { name: 'SubtleCrypto', type: 'Browser API', status: 'enabled', security: 'secure', description: 'Low-level cryptographic operations' },
-      ],
-      'Python': [
-        { name: 'cryptography', type: 'Library', status: 'enabled', security: 'secure', description: 'Modern cryptographic library for Python' },
-        { name: 'hashlib', type: 'Standard Library', status: 'enabled', security: 'secure', description: 'Secure hash and message digest algorithms' },
-        { name: 'secrets', type: 'Standard Library', status: 'enabled', security: 'secure', description: 'Cryptographically strong random numbers' },
-      ],
-      'C#': [
-        { name: '.NET Cryptography', type: 'Framework', status: 'enabled', security: 'secure', description: '.NET Framework cryptographic services' },
-        { name: 'CNG', type: 'Windows API', status: 'supported', security: 'secure', description: 'Cryptography API: Next Generation' },
-        { name: 'DPAPI', type: 'Windows API', status: 'supported', security: 'secure', description: 'Data Protection API' },
-      ]
-    };
-
-    const langSpecific = languageSpecific[componentName] || [];
-    return { 
-      algorithms: [...baseAlgorithms, ...langSpecific], 
-      protocols: baseProtocols 
-    };
-  }
-
-  return { algorithms: baseAlgorithms, protocols: baseProtocols };
-};
 
 export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = ({ component }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,61 +42,6 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
   const filteredAlgorithms = filterItems(algorithms);
   const filteredProtocols = filterItems(protocols);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'enabled':
-        return <Badge className="bg-green-100 text-green-800 border-green-300"><CheckCircle className="h-3 w-3 mr-1" />Enabled</Badge>;
-      case 'supported':
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-300"><Shield className="h-3 w-3 mr-1" />Supported</Badge>;
-      case 'deprecated':
-        return <Badge className="bg-red-100 text-red-800 border-red-300"><XCircle className="h-3 w-3 mr-1" />Deprecated</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getSecurityBadge = (security: string) => {
-    switch (security) {
-      case 'secure':
-        return <Badge className="bg-green-100 text-green-800 border-green-300">Secure</Badge>;
-      case 'weak':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300"><AlertTriangle className="h-3 w-3 mr-1" />Weak</Badge>;
-      case 'vulnerable':
-        return <Badge className="bg-red-100 text-red-800 border-red-300"><AlertTriangle className="h-3 w-3 mr-1" />Vulnerable</Badge>;
-      default:
-        return <Badge variant="outline">{security}</Badge>;
-    }
-  };
-
-  const renderItemsList = (items: any[], title: string) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm">{title} ({items.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-96">
-          <div className="space-y-3">
-            {items.map((item, index) => (
-              <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium text-sm">{item.name}</div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(item.status)}
-                    {getSecurityBadge(item.security)}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-600 mb-1">
-                  <Badge variant="outline" className="text-xs">{item.type}</Badge>
-                </div>
-                <div className="text-xs text-gray-500">{item.description}</div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
-  );
-
   const componentTypeText = component.isLanguage ? 'programming language' : 'library';
   const icon = component.isLanguage ? <Code className="h-5 w-5" /> : <Key className="h-5 w-5" />;
 
@@ -180,98 +57,15 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Search and Filters */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search algorithms, protocols, or descriptions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-700">Status</label>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={statusFilter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('all')}
-                  className="text-xs"
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === 'enabled' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('enabled')}
-                  className="text-xs"
-                >
-                  Enabled
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === 'supported' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('supported')}
-                  className="text-xs"
-                >
-                  Supported
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === 'deprecated' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('deprecated')}
-                  className="text-xs"
-                >
-                  Deprecated
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-700">Security</label>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={securityFilter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setSecurityFilter('all')}
-                  className="text-xs"
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={securityFilter === 'secure' ? 'default' : 'outline'}
-                  onClick={() => setSecurityFilter('secure')}
-                  className="text-xs"
-                >
-                  Secure
-                </Button>
-                <Button
-                  size="sm"
-                  variant={securityFilter === 'weak' ? 'default' : 'outline'}
-                  onClick={() => setSecurityFilter('weak')}
-                  className="text-xs"
-                >
-                  Weak
-                </Button>
-                <Button
-                  size="sm"
-                  variant={securityFilter === 'vulnerable' ? 'default' : 'outline'}
-                  onClick={() => setSecurityFilter('vulnerable')}
-                  className="text-xs"
-                >
-                  Vulnerable
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AlgorithmsSearchFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          securityFilter={securityFilter}
+          onSecurityFilterChange={setSecurityFilter}
+        />
 
-        {/* Algorithms and Protocols Tabs */}
         <Tabs defaultValue="algorithms" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="algorithms">
@@ -283,11 +77,17 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
           </TabsList>
 
           <TabsContent value="algorithms" className="mt-4">
-            {renderItemsList(filteredAlgorithms, 'Cryptographic Algorithms')}
+            <AlgorithmsProtocolsList 
+              items={filteredAlgorithms} 
+              title="Cryptographic Algorithms" 
+            />
           </TabsContent>
 
           <TabsContent value="protocols" className="mt-4">
-            {renderItemsList(filteredProtocols, 'Security Protocols')}
+            <AlgorithmsProtocolsList 
+              items={filteredProtocols} 
+              title="Security Protocols" 
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
