@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Key, Code } from 'lucide-react';
-import { generateMockAlgorithmsProtocols } from '@/utils/algorithmsMockData';
 import { AlgorithmsSearchFilters } from './AlgorithmsSearchFilters';
 import { AlgorithmsProtocolsList } from './AlgorithmsProtocolsList';
 
@@ -21,10 +20,43 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
   const [searchTerm, setSearchTerm] = useState('');
   const [securityFilter, setSecurityFilter] = useState('all');
 
-  const { algorithms, protocols } = useMemo(() => 
-    generateMockAlgorithmsProtocols(component.name, component.isLanguage), 
-    [component.name, component.isLanguage]
-  );
+  const { algorithms, protocols } = useMemo(() => {
+    // This will be replaced with actual API call based on component name and type
+    const mockAlgorithms = [
+      {
+        name: "AES-256-GCM",
+        type: "Symmetric Encryption",
+        status: "enabled",
+        security: "secure",
+        description: "Advanced Encryption Standard with Galois/Counter Mode",
+        source: component.name,
+        usageContext: "Data encryption and authentication"
+      },
+      {
+        name: "RSA-2048",
+        type: "Asymmetric Encryption", 
+        status: "supported",
+        security: "secure",
+        description: "RSA public-key cryptosystem with 2048-bit key size",
+        source: component.name,
+        usageContext: "Key exchange and digital signatures"
+      }
+    ];
+
+    const mockProtocols = [
+      {
+        name: "TLS 1.3",
+        type: "Transport Security",
+        status: "enabled", 
+        security: "secure",
+        description: "Transport Layer Security protocol version 1.3",
+        source: component.name,
+        usageContext: "Secure network communication"
+      }
+    ];
+
+    return { algorithms: mockAlgorithms, protocols: mockProtocols };
+  }, [component.name, component.isLanguage]);
 
   const filterItems = (items: any[]) => {
     return items.filter(item => {
