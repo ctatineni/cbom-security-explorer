@@ -2,28 +2,31 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Key, Shield, AlertTriangle } from 'lucide-react';
-import { generateMockAlgorithmsProtocols } from '@/utils/algorithmsMockData';
+import { Key, Shield, AlertTriangle, Info } from 'lucide-react';
+import { getNodeAlgorithmsProtocols } from '@/utils/serviceAlgorithmsMockData';
 
 interface CBOMAlgorithmsProtocolsExpandedProps {
   selectedNode: any;
+  serviceName?: string;
+  programmingLanguage?: string;
 }
 
 export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsExpandedProps> = ({ 
-  selectedNode 
+  selectedNode,
+  serviceName,
+  programmingLanguage
 }) => {
-  const { algorithms, protocols } = generateMockAlgorithmsProtocols(
-    selectedNode.name, 
-    selectedNode.type === 'language'
-  );
+  const serviceData = getNodeAlgorithmsProtocols(selectedNode, serviceName, programmingLanguage);
   
-  const enabledSupportedAlgorithms = algorithms.filter(
-    algo => algo.status === 'enabled' || algo.status === 'supported'
-  );
+  const enabledSupportedAlgorithms = [
+    ...serviceData.enabledAlgorithms,
+    ...serviceData.supportedAlgorithms
+  ];
   
-  const enabledSupportedProtocols = protocols.filter(
-    protocol => protocol.status === 'enabled' || protocol.status === 'supported'
-  );
+  const enabledSupportedProtocols = [
+    ...serviceData.enabledProtocols,
+    ...serviceData.supportedProtocols
+  ];
 
   const getSecurityIcon = (security: string) => {
     switch (security) {
@@ -38,8 +41,36 @@ export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsEx
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Key className="h-5 w-5" />
-        <h3 className="text-lg font-semibold">Enabled & Supported Algorithms & Protocols</h3>
+        <h3 className="text-lg font-semibold">
+          Algorithms & Protocols for {serviceData.serviceName}
+        </h3>
       </div>
+
+      {/* Service Information */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <div className="font-medium text-blue-900">Service</div>
+              <div className="text-blue-700">{serviceData.serviceName}</div>
+            </div>
+            <div>
+              <div className="font-medium text-blue-900">Type</div>
+              <div className="text-blue-700">{serviceData.serviceType}</div>
+            </div>
+            <div>
+              <div className="font-medium text-blue-900">Language</div>
+              <div className="text-blue-700">{serviceData.programmingLanguage}</div>
+            </div>
+            {serviceData.framework && (
+              <div>
+                <div className="font-medium text-blue-900">Framework</div>
+                <div className="text-blue-700">{serviceData.framework}</div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {enabledSupportedAlgorithms.length > 0 && (
         <Card>
@@ -49,20 +80,36 @@ export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsEx
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {enabledSupportedAlgorithms.map((algo, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                <div key={index} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-2">
                       {getSecurityIcon(algo.security)}
-                      <span className="font-medium">{algo.name}</span>
+                      <span className="font-medium text-lg">{algo.name}</span>
+                      {algo.version && (
+                        <Badge variant="outline" className="text-xs">
+                          v{algo.version}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">{algo.type}</div>
-                    {algo.description && (
-                      <div className="text-xs text-gray-500">{algo.description}</div>
-                    )}
+                    <div className="text-sm text-gray-700 mb-3">{algo.description}</div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-blue-500" />
+                        <span className="font-medium">Source:</span>
+                        <span className="text-blue-600">{algo.source}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-purple-500" />
+                        <span className="font-medium">Usage:</span>
+                        <span className="text-purple-600">{algo.usageContext}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 ml-4">
+                  <div className="flex flex-col gap-2 ml-4">
                     <Badge 
                       variant={algo.status === 'enabled' ? 'default' : 'secondary'} 
                       className="text-xs justify-center"
@@ -94,20 +141,41 @@ export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsEx
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {enabledSupportedProtocols.map((protocol, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                <div key={index} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-2">
                       {getSecurityIcon(protocol.security)}
-                      <span className="font-medium">{protocol.name}</span>
+                      <span className="font-medium text-lg">{protocol.name}</span>
+                      {protocol.version && (
+                        <Badge variant="outline" className="text-xs">
+                          v{protocol.version}
+                        </Badge>
+                      )}
+                      {protocol.port && (
+                        <Badge variant="outline" className="text-xs">
+                          Port {protocol.port}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">{protocol.type}</div>
-                    {protocol.description && (
-                      <div className="text-xs text-gray-500">{protocol.description}</div>
-                    )}
+                    <div className="text-sm text-gray-700 mb-3">{protocol.description}</div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-blue-500" />
+                        <span className="font-medium">Source:</span>
+                        <span className="text-blue-600">{protocol.source}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-purple-500" />
+                        <span className="font-medium">Usage:</span>
+                        <span className="text-purple-600">{protocol.usageContext}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 ml-4">
+                  <div className="flex flex-col gap-2 ml-4">
                     <Badge 
                       variant={protocol.status === 'enabled' ? 'default' : 'secondary'} 
                       className="text-xs justify-center"

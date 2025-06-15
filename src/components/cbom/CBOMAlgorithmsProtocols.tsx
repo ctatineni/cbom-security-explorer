@@ -3,29 +3,32 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Key } from 'lucide-react';
-import { generateMockAlgorithmsProtocols } from '@/utils/algorithmsMockData';
+import { getNodeAlgorithmsProtocols } from '@/utils/serviceAlgorithmsMockData';
 import { CBOMExpandableModal } from './CBOMExpandableModal';
 import { CBOMAlgorithmsProtocolsExpanded } from './CBOMAlgorithmsProtocolsExpanded';
 
 interface CBOMAlgorithmsProtocolsProps {
   selectedNode: any;
+  serviceName?: string;
+  programmingLanguage?: string;
 }
 
 export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = ({ 
-  selectedNode 
+  selectedNode,
+  serviceName,
+  programmingLanguage
 }) => {
-  const { algorithms, protocols } = generateMockAlgorithmsProtocols(
-    selectedNode.name, 
-    selectedNode.type === 'language'
-  );
+  const serviceData = getNodeAlgorithmsProtocols(selectedNode, serviceName, programmingLanguage);
   
-  const enabledSupportedAlgorithms = algorithms.filter(
-    algo => algo.status === 'enabled' || algo.status === 'supported'
-  );
+  const enabledSupportedAlgorithms = [
+    ...serviceData.enabledAlgorithms,
+    ...serviceData.supportedAlgorithms
+  ];
   
-  const enabledSupportedProtocols = protocols.filter(
-    protocol => protocol.status === 'enabled' || protocol.status === 'supported'
-  );
+  const enabledSupportedProtocols = [
+    ...serviceData.enabledProtocols,
+    ...serviceData.supportedProtocols
+  ];
 
   if (enabledSupportedAlgorithms.length === 0 && enabledSupportedProtocols.length === 0) {
     return null;
@@ -43,7 +46,11 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
             title="Enabled & Supported Algorithms & Protocols"
             triggerText="View All"
           >
-            <CBOMAlgorithmsProtocolsExpanded selectedNode={selectedNode} />
+            <CBOMAlgorithmsProtocolsExpanded 
+              selectedNode={selectedNode}
+              serviceName={serviceName}
+              programmingLanguage={programmingLanguage}
+            />
           </CBOMExpandableModal>
         </div>
       </CardHeader>
@@ -59,6 +66,7 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
                   <div>
                     <div className="text-sm font-medium">{algo.name}</div>
                     <div className="text-xs text-gray-500">{algo.type}</div>
+                    <div className="text-xs text-blue-600">Source: {algo.source}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge 
@@ -99,6 +107,7 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
                   <div>
                     <div className="text-sm font-medium">{protocol.name}</div>
                     <div className="text-xs text-gray-500">{protocol.type}</div>
+                    <div className="text-xs text-blue-600">Source: {protocol.source}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge 

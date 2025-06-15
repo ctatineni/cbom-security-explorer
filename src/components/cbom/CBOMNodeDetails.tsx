@@ -21,6 +21,25 @@ export const CBOMNodeDetails: React.FC<CBOMNodeDetailsProps> = ({
                              (selectedNode.type === 'language') ||
                              (selectedNode.name && cbomData?.libraries?.some(lib => lib.name === selectedNode.name));
 
+  // Extract service information from cbomData if available
+  const getServiceContext = () => {
+    // Try to find the current service context from cbomData
+    if (cbomData?.service) {
+      return {
+        serviceName: cbomData.service.name,
+        programmingLanguage: cbomData.service.programmingLanguage
+      };
+    }
+    
+    // Fallback to selectedNode information
+    return {
+      serviceName: selectedNode.serviceName || selectedNode.name,
+      programmingLanguage: selectedNode.programmingLanguage || selectedNode.language
+    };
+  };
+
+  const serviceContext = getServiceContext();
+
   return (
     <div className="space-y-4">
       <Card>
@@ -75,7 +94,11 @@ export const CBOMNodeDetails: React.FC<CBOMNodeDetailsProps> = ({
 
       {/* Show Algorithms & Protocols for Libraries/Languages */}
       {isLibraryOrLanguage && (
-        <CBOMAlgorithmsProtocols selectedNode={selectedNode} />
+        <CBOMAlgorithmsProtocols 
+          selectedNode={selectedNode}
+          serviceName={serviceContext.serviceName}
+          programmingLanguage={serviceContext.programmingLanguage}
+        />
       )}
 
       {/* Code Usage Locations */}
