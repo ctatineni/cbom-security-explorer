@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ComponentDetailHeader } from './ComponentDetailHeader';
 import { ComponentOverviewCard } from './ComponentOverviewCard';
 import { ApplicationDetailCard } from './ApplicationDetailCard';
+import { AlgorithmsProtocolsCard } from './AlgorithmsProtocolsCard';
 
 interface ComponentDetailModalProps {
   component: {
@@ -42,17 +44,45 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   open,
   onClose
 }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+
   if (!component) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <ComponentDetailHeader component={component} />
 
-        <div className="space-y-6">
-          <ComponentOverviewCard component={component} />
-          <ApplicationDetailCard component={component} />
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="applications">Applications</TabsTrigger>
+            {component.isLibrary && (
+              <TabsTrigger value="algorithms">Algorithms & Protocols</TabsTrigger>
+            )}
+            <TabsTrigger value="security">Security</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <ComponentOverviewCard component={component} />
+          </TabsContent>
+
+          <TabsContent value="applications" className="space-y-6 mt-6">
+            <ApplicationDetailCard component={component} />
+          </TabsContent>
+
+          {component.isLibrary && (
+            <TabsContent value="algorithms" className="space-y-6 mt-6">
+              <AlgorithmsProtocolsCard component={component} />
+            </TabsContent>
+          )}
+
+          <TabsContent value="security" className="space-y-6 mt-6">
+            <div className="text-sm text-gray-500 text-center py-8">
+              Security analysis coming soon...
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
