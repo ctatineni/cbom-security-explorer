@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Key, Shield, AlertTriangle, Info } from 'lucide-react';
-import { getNodeAlgorithmsProtocols } from '@/utils/serviceAlgorithmsMockData';
 
 interface CBOMAlgorithmsProtocolsExpandedProps {
   selectedNode: any;
@@ -16,17 +15,54 @@ export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsEx
   serviceName,
   programmingLanguage
 }) => {
-  const serviceData = getNodeAlgorithmsProtocols(selectedNode, serviceName, programmingLanguage);
-  
-  const enabledSupportedAlgorithms = [
-    ...serviceData.enabledAlgorithms,
-    ...serviceData.supportedAlgorithms
+  // This will be replaced with actual API call to fetch algorithms and protocols
+  // based on the service's programming language and libraries
+  const serviceData = {
+    serviceName: serviceName || selectedNode.name,
+    serviceType: selectedNode.type || 'Service',
+    programmingLanguage: programmingLanguage || 'Unknown',
+    framework: undefined
+  };
+
+  const mockAlgorithms = [
+    {
+      name: "AES-256-GCM",
+      type: "Symmetric Encryption",
+      status: "enabled",
+      security: "secure",
+      description: "Advanced Encryption Standard with Galois/Counter Mode for authenticated encryption",
+      source: selectedNode.name || "System Library",
+      usageContext: "Data encryption and authentication",
+      version: "256-bit"
+    },
+    {
+      name: "RSA-2048",
+      type: "Asymmetric Encryption", 
+      status: "supported",
+      security: "secure",
+      description: "RSA public-key cryptosystem with 2048-bit key size",
+      source: selectedNode.name || "System Library",
+      usageContext: "Key exchange and digital signatures",
+      version: "2048-bit"
+    }
   ];
-  
-  const enabledSupportedProtocols = [
-    ...serviceData.enabledProtocols,
-    ...serviceData.supportedProtocols
+
+  const mockProtocols = [
+    {
+      name: "TLS 1.3",
+      type: "Transport Security",
+      status: "enabled", 
+      security: "secure",
+      description: "Transport Layer Security protocol version 1.3 for secure communication",
+      source: selectedNode.name || "System Library",
+      usageContext: "Secure network communication",
+      version: "1.3",
+      port: 443
+    }
   ];
+
+  const enabledSupportedAlgorithms = mockAlgorithms;
+  const enabledSupportedProtocols = mockProtocols;
 
   const getSecurityIcon = (security: string) => {
     switch (security) {
@@ -89,7 +125,7 @@ export const CBOMAlgorithmsProtocolsExpanded: React.FC<CBOMAlgorithmsProtocolsEx
                       <span className="font-medium text-lg">{algo.name}</span>
                       {algo.version && (
                         <Badge variant="outline" className="text-xs">
-                          v{algo.version}
+                          {algo.version}
                         </Badge>
                       )}
                     </div>

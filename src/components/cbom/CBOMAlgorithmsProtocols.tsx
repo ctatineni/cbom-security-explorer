@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Key } from 'lucide-react';
-import { getNodeAlgorithmsProtocols } from '@/utils/serviceAlgorithmsMockData';
 import { CBOMExpandableModal } from './CBOMExpandableModal';
 import { CBOMAlgorithmsProtocolsExpanded } from './CBOMAlgorithmsProtocolsExpanded';
 
@@ -18,17 +17,37 @@ export const CBOMAlgorithmsProtocols: React.FC<CBOMAlgorithmsProtocolsProps> = (
   serviceName,
   programmingLanguage
 }) => {
-  const serviceData = getNodeAlgorithmsProtocols(selectedNode, serviceName, programmingLanguage);
-  
-  const enabledSupportedAlgorithms = [
-    ...serviceData.enabledAlgorithms,
-    ...serviceData.supportedAlgorithms
+  // This will be replaced with actual API call to fetch algorithms and protocols
+  // based on the service's programming language and libraries
+  const mockAlgorithms = [
+    {
+      name: "AES-256-GCM",
+      type: "Symmetric Encryption",
+      status: "enabled",
+      security: "secure",
+      source: selectedNode.name || "System Library"
+    },
+    {
+      name: "RSA-2048",
+      type: "Asymmetric Encryption", 
+      status: "supported",
+      security: "secure",
+      source: selectedNode.name || "System Library"
+    }
   ];
-  
-  const enabledSupportedProtocols = [
-    ...serviceData.enabledProtocols,
-    ...serviceData.supportedProtocols
+
+  const mockProtocols = [
+    {
+      name: "TLS 1.3",
+      type: "Transport Security",
+      status: "enabled", 
+      security: "secure",
+      source: selectedNode.name || "System Library"
+    }
   ];
+
+  const enabledSupportedAlgorithms = mockAlgorithms;
+  const enabledSupportedProtocols = mockProtocols;
 
   if (enabledSupportedAlgorithms.length === 0 && enabledSupportedProtocols.length === 0) {
     return null;
