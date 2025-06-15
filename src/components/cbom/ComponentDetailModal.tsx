@@ -48,16 +48,18 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
 
   if (!component) return null;
 
+  const showAlgorithmsTab = component.isLibrary || component.isLanguage;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <ComponentDetailHeader component={component} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${showAlgorithmsTab ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="applications">Applications</TabsTrigger>
-            {component.isLibrary && (
+            {showAlgorithmsTab && (
               <TabsTrigger value="algorithms">Algorithms & Protocols</TabsTrigger>
             )}
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -71,7 +73,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
             <ApplicationDetailCard component={component} />
           </TabsContent>
 
-          {component.isLibrary && (
+          {showAlgorithmsTab && (
             <TabsContent value="algorithms" className="space-y-6 mt-6">
               <AlgorithmsProtocolsCard component={component} />
             </TabsContent>

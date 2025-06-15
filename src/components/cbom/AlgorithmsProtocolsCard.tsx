@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Shield, Key, Lock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Search, Shield, Key, Lock, CheckCircle, XCircle, AlertTriangle, Code } from 'lucide-react';
 
 interface AlgorithmsProtocolsCardProps {
   component: {
@@ -14,12 +14,13 @@ interface AlgorithmsProtocolsCardProps {
     name: string;
     version?: string;
     isLibrary?: boolean;
+    isLanguage?: boolean;
   };
 }
 
 // Mock data for algorithms and protocols - in real app this would come from the component data
-const generateMockAlgorithmsProtocols = (componentName: string) => {
-  const cryptoAlgorithms = [
+const generateMockAlgorithmsProtocols = (componentName: string, isLanguage: boolean = false) => {
+  const baseAlgorithms = [
     { name: 'AES-256-GCM', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'Advanced Encryption Standard with Galois/Counter Mode' },
     { name: 'RSA-2048', type: 'Asymmetric Encryption', status: 'enabled', security: 'secure', description: 'RSA encryption with 2048-bit key' },
     { name: 'SHA-256', type: 'Hash Function', status: 'enabled', security: 'secure', description: 'Secure Hash Algorithm 256-bit' },
@@ -28,14 +29,13 @@ const generateMockAlgorithmsProtocols = (componentName: string) => {
     { name: 'MD5', type: 'Hash Function', status: 'deprecated', security: 'vulnerable', description: 'Message Digest Algorithm 5 (deprecated)' },
     { name: 'DES', type: 'Symmetric Encryption', status: 'deprecated', security: 'vulnerable', description: 'Data Encryption Standard (deprecated)' },
     { name: 'RSA-1024', type: 'Asymmetric Encryption', status: 'deprecated', security: 'weak', description: 'RSA encryption with 1024-bit key (weak)' },
-    // Add more algorithms to reach ~50
     { name: 'AES-128-CBC', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'AES 128-bit Cipher Block Chaining' },
     { name: 'AES-256-CBC', type: 'Symmetric Encryption', status: 'enabled', security: 'secure', description: 'AES 256-bit Cipher Block Chaining' },
     { name: 'PBKDF2', type: 'Key Derivation', status: 'enabled', security: 'secure', description: 'Password-Based Key Derivation Function 2' },
     { name: 'HMAC-SHA256', type: 'Message Authentication', status: 'enabled', security: 'secure', description: 'Hash-based Message Authentication Code with SHA-256' },
   ];
 
-  const protocols = [
+  const baseProtocols = [
     { name: 'TLS 1.3', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'Transport Layer Security version 1.3' },
     { name: 'TLS 1.2', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'Transport Layer Security version 1.2' },
     { name: 'HTTPS', type: 'Application Protocol', status: 'enabled', security: 'secure', description: 'HTTP over TLS/SSL' },
@@ -46,12 +46,43 @@ const generateMockAlgorithmsProtocols = (componentName: string) => {
     { name: 'SSL 3.0', type: 'Transport Security', status: 'deprecated', security: 'vulnerable', description: 'Secure Sockets Layer 3.0 (deprecated)' },
     { name: 'TLS 1.0', type: 'Transport Security', status: 'deprecated', security: 'weak', description: 'Transport Layer Security 1.0 (deprecated)' },
     { name: 'TLS 1.1', type: 'Transport Security', status: 'deprecated', security: 'weak', description: 'Transport Layer Security 1.1 (deprecated)' },
-    // Add more protocols
     { name: 'WebSocket Secure', type: 'Transport Security', status: 'enabled', security: 'secure', description: 'WebSocket over TLS' },
     { name: 'gRPC', type: 'RPC Protocol', status: 'enabled', security: 'secure', description: 'Google Remote Procedure Call' },
   ];
 
-  return { algorithms: cryptoAlgorithms, protocols };
+  // Language-specific additions
+  if (isLanguage) {
+    const languageSpecific = {
+      'Java': [
+        { name: 'JCE', type: 'Crypto Framework', status: 'enabled', security: 'secure', description: 'Java Cryptography Extension' },
+        { name: 'Bouncy Castle', type: 'Crypto Provider', status: 'supported', security: 'secure', description: 'Third-party cryptography provider' },
+        { name: 'JSSE', type: 'Security Framework', status: 'enabled', security: 'secure', description: 'Java Secure Socket Extension' },
+      ],
+      'JavaScript': [
+        { name: 'Web Crypto API', type: 'Browser API', status: 'enabled', security: 'secure', description: 'Native browser cryptography API' },
+        { name: 'Node.js Crypto', type: 'Runtime Module', status: 'enabled', security: 'secure', description: 'Node.js built-in crypto module' },
+        { name: 'SubtleCrypto', type: 'Browser API', status: 'enabled', security: 'secure', description: 'Low-level cryptographic operations' },
+      ],
+      'Python': [
+        { name: 'cryptography', type: 'Library', status: 'enabled', security: 'secure', description: 'Modern cryptographic library for Python' },
+        { name: 'hashlib', type: 'Standard Library', status: 'enabled', security: 'secure', description: 'Secure hash and message digest algorithms' },
+        { name: 'secrets', type: 'Standard Library', status: 'enabled', security: 'secure', description: 'Cryptographically strong random numbers' },
+      ],
+      'C#': [
+        { name: '.NET Cryptography', type: 'Framework', status: 'enabled', security: 'secure', description: '.NET Framework cryptographic services' },
+        { name: 'CNG', type: 'Windows API', status: 'supported', security: 'secure', description: 'Cryptography API: Next Generation' },
+        { name: 'DPAPI', type: 'Windows API', status: 'supported', security: 'secure', description: 'Data Protection API' },
+      ]
+    };
+
+    const langSpecific = languageSpecific[componentName] || [];
+    return { 
+      algorithms: [...baseAlgorithms, ...langSpecific], 
+      protocols: baseProtocols 
+    };
+  }
+
+  return { algorithms: baseAlgorithms, protocols: baseProtocols };
 };
 
 export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = ({ component }) => {
@@ -60,8 +91,8 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
   const [securityFilter, setSecurityFilter] = useState('all');
 
   const { algorithms, protocols } = useMemo(() => 
-    generateMockAlgorithmsProtocols(component.name), 
-    [component.name]
+    generateMockAlgorithmsProtocols(component.name, component.isLanguage), 
+    [component.name, component.isLanguage]
   );
 
   const filterItems = (items: any[]) => {
@@ -134,15 +165,18 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
     </Card>
   );
 
+  const componentTypeText = component.isLanguage ? 'programming language' : 'library';
+  const icon = component.isLanguage ? <Code className="h-5 w-5" /> : <Key className="h-5 w-5" />;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Key className="h-5 w-5" />
+          {icon}
           Supported Algorithms & Protocols
         </CardTitle>
         <div className="text-sm text-gray-600">
-          Cryptographic algorithms and security protocols supported by {component.name}
+          Cryptographic algorithms and security protocols supported by the {componentTypeText} {component.name}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
