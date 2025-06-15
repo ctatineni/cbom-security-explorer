@@ -1,3 +1,4 @@
+
 export interface CryptoAlgorithm {
   id: string;
   name: string;
@@ -33,6 +34,23 @@ export interface Library {
     usedIn: string[];
     purpose: string;
   }>;
+  // Add algorithm/protocol strings for libraries
+  enabledAlgorithms: string;
+  enabledProtocols: string;
+  supportedAlgorithms: string;
+  supportedProtocols: string;
+}
+
+export interface ProgrammingLanguage {
+  id: string;
+  name: string;
+  version: string;
+  runtimeEnvironment?: string;
+  // Add algorithm/protocol strings for languages
+  enabledAlgorithms: string;
+  enabledProtocols: string;
+  supportedAlgorithms: string;
+  supportedProtocols: string;
 }
 
 export interface CodePattern {
@@ -71,8 +89,7 @@ export interface Service {
   version: string;
   description: string;
   riskLevel: 'low' | 'medium' | 'high';
-  programmingLanguage?: string;
-  languageVersion?: string;
+  programmingLanguage?: ProgrammingLanguage;
   pqcCompatible?: boolean;
   applicationId: string;
   cryptoAlgorithms: CryptoAlgorithm[];
@@ -95,7 +112,7 @@ export interface Host {
   operatingSystem?: string;
   containerImage?: string;
   kubernetesNamespace?: string;
-  programmingLanguage?: string;
+  programmingLanguage?: ProgrammingLanguage;
 }
 
 export interface Application {
@@ -185,7 +202,7 @@ const sampleCryptoAlgorithms: CryptoAlgorithm[] = [
   }
 ];
 
-// Sample libraries
+// Sample libraries with algorithm/protocol strings
 const sampleLibraries: Library[] = [
   {
     id: "openssl",
@@ -208,7 +225,38 @@ const sampleLibraries: Library[] = [
         usedIn: ["src/auth/password.js", "src/data/integrity.js"],
         purpose: "Hash generation"
       }
-    ]
+    ],
+    enabledAlgorithms: "AES-256-GCM, RSA-2048, HMAC-SHA256",
+    enabledProtocols: "TLS 1.3, TLS 1.2",
+    supportedAlgorithms: "AES-256-GCM, AES-256-CBC, RSA-2048, RSA-4096, ECDSA-P256, HMAC-SHA256, HMAC-SHA512",
+    supportedProtocols: "TLS 1.3, TLS 1.2, TLS 1.1, SSL 3.0, DTLS 1.2"
+  },
+  {
+    id: "spring-security",
+    name: "Spring Security",
+    version: "5.7.2",
+    license: "Apache 2.0",
+    hasVulnerabilities: false,
+    algorithms: ["aes-256"],
+    lastUpdated: "2023-10-15",
+    usageLocations: [
+      {
+        file: "pom.xml",
+        line: 45,
+        context: "Security framework dependency"
+      }
+    ],
+    functions: [
+      {
+        name: "BCryptPasswordEncoder",
+        usedIn: ["src/auth/UserService.java"],
+        purpose: "Password hashing"
+      }
+    ],
+    enabledAlgorithms: "BCrypt, PBKDF2, AES-256-GCM",
+    enabledProtocols: "OAuth 2.0, SAML 2.0",
+    supportedAlgorithms: "BCrypt, PBKDF2, Argon2, AES-256-GCM, AES-256-CBC, RSA-2048",
+    supportedProtocols: "OAuth 2.0, OAuth 1.0, SAML 2.0, OpenID Connect, JWT"
   },
   {
     id: "legacy-crypto",
@@ -231,7 +279,45 @@ const sampleLibraries: Library[] = [
         usedIn: ["src/legacy/oldHashing.js"],
         purpose: "Legacy hash functions"
       }
-    ]
+    ],
+    enabledAlgorithms: "MD5, DES",
+    enabledProtocols: "SSL 2.0",
+    supportedAlgorithms: "MD5, SHA-1, DES, 3DES",
+    supportedProtocols: "SSL 2.0, SSL 3.0"
+  }
+];
+
+// Sample programming languages with algorithm/protocol strings
+const sampleProgrammingLanguages: ProgrammingLanguage[] = [
+  {
+    id: "java-11",
+    name: "Java",
+    version: "11.0.19",
+    runtimeEnvironment: "OpenJDK",
+    enabledAlgorithms: "AES-256-GCM, RSA-2048, HMAC-SHA256, SHA-256",
+    enabledProtocols: "TLS 1.3, TLS 1.2, HTTPS",
+    supportedAlgorithms: "AES-256-GCM, AES-256-CBC, AES-192, AES-128, RSA-2048, RSA-4096, ECDSA-P256, ECDSA-P384, HMAC-SHA256, HMAC-SHA512, SHA-256, SHA-512",
+    supportedProtocols: "TLS 1.3, TLS 1.2, TLS 1.1, SSL 3.0, HTTPS, HTTP/2, WebSocket"
+  },
+  {
+    id: "python-39",
+    name: "Python",
+    version: "3.9.16",
+    runtimeEnvironment: "CPython",
+    enabledAlgorithms: "AES-256-GCM, RSA-2048, HMAC-SHA256, Fernet",
+    enabledProtocols: "TLS 1.3, HTTPS",
+    supportedAlgorithms: "AES-256-GCM, AES-256-CBC, ChaCha20, RSA-2048, RSA-4096, ECDSA-P256, Ed25519, HMAC-SHA256, HMAC-SHA512, Blake2b, Fernet",
+    supportedProtocols: "TLS 1.3, TLS 1.2, HTTPS, HTTP/2, WebSocket, SMTP, IMAP"
+  },
+  {
+    id: "javascript-node",
+    name: "JavaScript",
+    version: "14.21.3",
+    runtimeEnvironment: "Node.js",
+    enabledAlgorithms: "AES-256-GCM, RSA-2048, HMAC-SHA256",
+    enabledProtocols: "TLS 1.3, HTTPS",
+    supportedAlgorithms: "AES-256-GCM, AES-256-CBC, ChaCha20-Poly1305, RSA-2048, RSA-4096, ECDSA-P256, Ed25519, HMAC-SHA256, HMAC-SHA512",
+    supportedProtocols: "TLS 1.3, TLS 1.2, HTTPS, HTTP/2, WebSocket"
   }
 ];
 
@@ -315,7 +401,6 @@ const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
   const hostCount = Math.floor(Math.random() * 5) + 2; // 2-6 hosts per app
   const hostTypes = ['vm', 'container', 'bare-metal', 'kubernetes-pod'] as const;
   const osTypes = ['Ubuntu 20.04', 'CentOS 8', 'Alpine Linux', 'Windows Server 2019', 'RHEL 8'];
-  const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
   
   for (let i = 0; i < hostCount; i++) {
     const hostType = hostTypes[Math.floor(Math.random() * hostTypes.length)];
@@ -325,6 +410,11 @@ const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
     const hostLibraries = sampleLibraries
       .filter(() => Math.random() > 0.5)
       .slice(0, Math.floor(Math.random() * 3) + 1);
+    
+    // Randomly assign a programming language
+    const hostLanguage = Math.random() > 0.3 ? 
+      sampleProgrammingLanguages[Math.floor(Math.random() * sampleProgrammingLanguages.length)] : 
+      undefined;
     
     const host: Host = {
       id: `host-${applicationId}-${i}`,
@@ -337,7 +427,7 @@ const generateMockHosts = (applicationId: string, appIndex: number): Host[] => {
       lastScanned: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       ipAddress: `192.168.${appIndex + 1}.${i + 10}`,
       operatingSystem: osTypes[Math.floor(Math.random() * osTypes.length)],
-      programmingLanguage: Math.random() > 0.3 ? languages[Math.floor(Math.random() * languages.length)] : undefined
+      programmingLanguage: hostLanguage
     };
     
     if (hostType === 'container') {
@@ -366,10 +456,11 @@ const generateMockApplications = (): Application[] => {
     
     for (let i = 0; i < serviceCount; i++) {
       const serviceTypes = ['Auth', 'Payment', 'Data', 'API', 'Cache', 'Storage', 'Analytics', 'Notification'];
-      const languages = ['Java', 'Python', 'JavaScript', 'C#', 'Go', 'Rust', 'C++'];
       const type = serviceTypes[i % serviceTypes.length];
-      const language = languages[Math.floor(Math.random() * languages.length)];
       const pqcCompatible = Math.random() > 0.4;
+      
+      // Randomly assign a programming language
+      const serviceLanguage = sampleProgrammingLanguages[Math.floor(Math.random() * sampleProgrammingLanguages.length)];
       
       // Randomly assign some algorithms, libraries, patterns, and recommendations to each service
       const serviceCryptoAlgorithms = sampleCryptoAlgorithms
@@ -394,8 +485,7 @@ const generateMockApplications = (): Application[] => {
         version: `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
         description: `${appName} ${type.toLowerCase()} service handling critical operations`,
         riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
-        programmingLanguage: language,
-        languageVersion: language === 'Java' ? '11' : language === 'Python' ? '3.9' : '14.0',
+        programmingLanguage: serviceLanguage,
         pqcCompatible,
         applicationId: `app-${appIndex}`,
         cryptoAlgorithms: serviceCryptoAlgorithms,
