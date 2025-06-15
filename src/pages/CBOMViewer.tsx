@@ -27,7 +27,6 @@ import { HostsGrid } from '@/components/cbom/HostsGrid';
 
 const CBOMViewer = () => {
   const { state, handlers } = useCBOMViewer();
-  const [algoProtoFilter, setAlgoProtoFilter] = React.useState('all');
 
   const getCurrentServicesAndHosts = () => {
     if (!state.selectedApplication) return { services: [], hosts: [] };
@@ -86,7 +85,6 @@ const CBOMViewer = () => {
   };
 
   const filteredCBOMData = getFilteredCBOMData(state.selectedService || state.selectedHost, state.cbomData, state.selectedApplication);
-  const finalFilteredData = filterAlgorithmsAndProtocols(filteredCBOMData, algoProtoFilter);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -316,20 +314,13 @@ const CBOMViewer = () => {
 
           {state.activeTab === 'overview' && (state.selectedService || state.selectedHost) && filteredCBOMData && (
             <div className="space-y-4">
-              {/* Filter Controls */}
-              <GraphControls
-                title={`Cryptographic Dependencies - ${(state.selectedService || state.selectedHost)?.name}`}
-                filterValue={algoProtoFilter}
-                onFilterChange={setAlgoProtoFilter}
-              />
-
               {/* Graph and Sidebar */}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-500px)]">
                 <div className="lg:col-span-3">
                   <Card className="h-full">
                     <CardContent className="h-full p-6">
                       <CBOMGraph 
-                        data={finalFilteredData}
+                        data={filteredCBOMData}
                         onNodeSelect={handlers.handleNodeSelect}
                         selectedNode={state.selectedNode}
                       />
@@ -339,7 +330,7 @@ const CBOMViewer = () => {
                 <div className="lg:col-span-1">
                   <CBOMSidebar 
                     selectedNode={state.selectedNode}
-                    cbomData={finalFilteredData}
+                    cbomData={filteredCBOMData}
                     onNodeSelect={handlers.handleNodeSelect}
                   />
                 </div>

@@ -19,7 +19,6 @@ interface AlgorithmsProtocolsCardProps {
 
 export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = ({ component }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [securityFilter, setSecurityFilter] = useState('all');
 
   const { algorithms, protocols } = useMemo(() => 
@@ -29,13 +28,14 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
 
   const filterItems = (items: any[]) => {
     return items.filter(item => {
+      // Always filter to show only enabled and supported items
+      const isEnabledOrSupported = item.status === 'enabled' || item.status === 'supported';
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
       const matchesSecurity = securityFilter === 'all' || item.security === securityFilter;
       
-      return matchesSearch && matchesStatus && matchesSecurity;
+      return isEnabledOrSupported && matchesSearch && matchesSecurity;
     });
   };
 
@@ -53,17 +53,18 @@ export const AlgorithmsProtocolsCard: React.FC<AlgorithmsProtocolsCardProps> = (
           Supported Algorithms & Protocols
         </CardTitle>
         <div className="text-sm text-gray-600">
-          Cryptographic algorithms and security protocols supported by the {componentTypeText} {component.name}
+          Enabled and supported cryptographic algorithms and security protocols for {componentTypeText} {component.name}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <AlgorithmsSearchFilters
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+          statusFilter="supported" // Fixed to show enabled/supported only
+          onStatusFilterChange={() => {}} // No-op since we don't allow changing this
           securityFilter={securityFilter}
           onSecurityFilterChange={setSecurityFilter}
+          hideStatusFilter={true} // Hide the status filter
         />
 
         <Tabs defaultValue="algorithms" className="w-full">

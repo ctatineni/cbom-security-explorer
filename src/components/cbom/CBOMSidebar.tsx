@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -191,11 +190,11 @@ export const CBOMSidebar: React.FC<CBOMSidebarProps> = ({
                       <span className="font-medium text-sm">{location.file}</span>
                       <span className="text-xs text-gray-500">Line {location.line}</span>
                     </div>
-                    <div className="text-xs text-gray-600 mb-1">
-                      Function: <span className="font-mono">{location.function}</span>
+                    <div className="text-xs text-gray-600 mb-2">
+                      Function: <span className="font-mono bg-gray-100 px-1 rounded">{location.function}</span>
                     </div>
-                    <div className="bg-gray-800 text-green-400 p-2 rounded text-xs font-mono">
-                      {location.usage}
+                    <div className="bg-gray-900 text-green-400 p-3 rounded-md text-xs font-mono overflow-x-auto">
+                      <pre className="whitespace-pre-wrap break-all">{location.usage}</pre>
                     </div>
                   </div>
                 ))}

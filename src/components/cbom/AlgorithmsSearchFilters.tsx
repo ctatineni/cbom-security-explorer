@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Search } from 'lucide-react';
 
 interface AlgorithmsSearchFiltersProps {
@@ -11,6 +12,7 @@ interface AlgorithmsSearchFiltersProps {
   onStatusFilterChange: (value: string) => void;
   securityFilter: string;
   onSecurityFilterChange: (value: string) => void;
+  hideStatusFilter?: boolean;
 }
 
 export const AlgorithmsSearchFilters: React.FC<AlgorithmsSearchFiltersProps> = ({
@@ -20,95 +22,60 @@ export const AlgorithmsSearchFilters: React.FC<AlgorithmsSearchFiltersProps> = (
   onStatusFilterChange,
   securityFilter,
   onSecurityFilterChange,
+  hideStatusFilter = false
 }) => {
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input
-          placeholder="Search algorithms, protocols, or descriptions..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
-        />
+    <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex-1">
+        <Label htmlFor="search" className="text-sm font-medium">
+          Search
+        </Label>
+        <div className="relative mt-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            id="search"
+            placeholder="Search algorithms, protocols..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </div>
-      
-      <div className="flex gap-4">
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-700">Status</label>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={statusFilter === 'all' ? 'default' : 'outline'}
-              onClick={() => onStatusFilterChange('all')}
-              className="text-xs"
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={statusFilter === 'enabled' ? 'default' : 'outline'}
-              onClick={() => onStatusFilterChange('enabled')}
-              className="text-xs"
-            >
-              Enabled
-            </Button>
-            <Button
-              size="sm"
-              variant={statusFilter === 'supported' ? 'default' : 'outline'}
-              onClick={() => onStatusFilterChange('supported')}
-              className="text-xs"
-            >
-              Supported
-            </Button>
-            <Button
-              size="sm"
-              variant={statusFilter === 'deprecated' ? 'default' : 'outline'}
-              onClick={() => onStatusFilterChange('deprecated')}
-              className="text-xs"
-            >
-              Deprecated
-            </Button>
-          </div>
+
+      {!hideStatusFilter && (
+        <div className="w-32">
+          <Label htmlFor="status-filter" className="text-sm font-medium">
+            Status
+          </Label>
+          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+            <SelectTrigger id="status-filter" className="mt-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="enabled">Enabled</SelectItem>
+              <SelectItem value="supported">Supported</SelectItem>
+              <SelectItem value="deprecated">Deprecated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-700">Security</label>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={securityFilter === 'all' ? 'default' : 'outline'}
-              onClick={() => onSecurityFilterChange('all')}
-              className="text-xs"
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={securityFilter === 'secure' ? 'default' : 'outline'}
-              onClick={() => onSecurityFilterChange('secure')}
-              className="text-xs"
-            >
-              Secure
-            </Button>
-            <Button
-              size="sm"
-              variant={securityFilter === 'weak' ? 'default' : 'outline'}
-              onClick={() => onSecurityFilterChange('weak')}
-              className="text-xs"
-            >
-              Weak
-            </Button>
-            <Button
-              size="sm"
-              variant={securityFilter === 'vulnerable' ? 'default' : 'outline'}
-              onClick={() => onSecurityFilterChange('vulnerable')}
-              className="text-xs"
-            >
-              Vulnerable
-            </Button>
-          </div>
-        </div>
+      )}
+
+      <div className="w-32">
+        <Label htmlFor="security-filter" className="text-sm font-medium">
+          Security
+        </Label>
+        <Select value={securityFilter} onValueChange={onSecurityFilterChange}>
+          <SelectTrigger id="security-filter" className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="secure">Secure</SelectItem>
+            <SelectItem value="weak">Weak</SelectItem>
+            <SelectItem value="vulnerable">Vulnerable</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
