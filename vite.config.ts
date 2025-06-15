@@ -10,15 +10,32 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     watch: {
-      // Optimize file watching to reduce open file descriptors
+      // More aggressive file watching optimization
+      usePolling: false,
+      interval: 1000,
+      binaryInterval: 3000,
       ignored: [
         '**/node_modules/**',
         '**/.git/**',
         '**/dist/**',
         '**/build/**',
         '**/*.log',
-        '**/coverage/**'
+        '**/coverage/**',
+        '**/.vscode/**',
+        '**/.idea/**',
+        '**/tmp/**',
+        '**/temp/**',
+        '**/.cache/**',
+        '**/public/**',
+        '**/*.md',
+        '**/*.txt',
+        '**/*.json',
+        '!**/package.json',
+        '!**/tsconfig.json'
       ]
+    },
+    fs: {
+      strict: false
     }
   },
   plugins: [
@@ -31,4 +48,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ['@lovable-dev/ui']
+  }
 }));
