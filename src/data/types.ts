@@ -87,7 +87,8 @@ export interface Service {
   version: string;
   description: string;
   riskLevel: 'low' | 'medium' | 'high';
-  programmingLanguage?: string; // Keep as string for compatibility
+  programmingLanguage?: string;
+  languageVersion?: string; // Added missing property
   pqcCompatible?: boolean;
   applicationId: string;
   cryptoAlgorithms: CryptoAlgorithm[];
@@ -110,7 +111,7 @@ export interface Host {
   operatingSystem?: string;
   containerImage?: string;
   kubernetesNamespace?: string;
-  programmingLanguage?: string; // Keep as string for compatibility
+  programmingLanguage?: string;
 }
 
 export interface Application {
