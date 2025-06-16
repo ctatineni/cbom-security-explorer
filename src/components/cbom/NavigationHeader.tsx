@@ -11,8 +11,10 @@ import {
   Package, 
   Key, 
   BarChart3,
-  RotateCcw
+  RotateCcw,
+  Home
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface NavigationHeaderProps {
   activeTab: string;
@@ -43,6 +45,8 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
   cryptoMaterialsData,
   componentsDrillDownData
 }) => {
+  const navigate = useNavigate();
+
   const getNavItems = () => {
     const items = [];
 
@@ -121,6 +125,10 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
     // The parent component will handle clearing the data
   };
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-6 py-4">
@@ -144,18 +152,31 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
             </div>
           </div>
           
-          {/* Reset button - only show if we have data */}
-          {(hasApplicationsData || hasComponentsData || hasCryptoData) && (
+          <div className="flex items-center gap-2">
+            {/* Home button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReset}
+              onClick={handleGoHome}
               className="flex items-center gap-2"
             >
-              <RotateCcw className="h-4 w-4" />
-              New Search
+              <Home className="h-4 w-4" />
+              Dashboard
             </Button>
-          )}
+            
+            {/* Reset button - only show if we have data */}
+            {(hasApplicationsData || hasComponentsData || hasCryptoData) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                New Search
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Action buttons for current context */}
