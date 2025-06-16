@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,14 +105,6 @@ const Home: React.FC = () => {
               >
                 Start Analysis
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-blue-600"
-                onClick={() => navigate('/cbom-viewer')}
-              >
-                View Dashboard
               </Button>
             </div>
           </div>
@@ -234,7 +225,7 @@ const Home: React.FC = () => {
             className="bg-white text-blue-600 hover:bg-gray-100"
             onClick={() => navigate('/cbom-viewer')}
           >
-            Launch Dashboard
+            Start Analysis
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
