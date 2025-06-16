@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,9 @@ import {
   ArrowRight,
   TrendingUp,
   Globe,
-  Database
+  Database,
+  Brain,
+  Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,33 +37,33 @@ const Home: React.FC = () => {
   const features = [
     {
       icon: Search,
-      title: "Natural Language Search",
-      description: "Query your cryptographic assets using plain English. Find services, algorithms, and vulnerabilities instantly."
+      title: "AI-Powered Natural Language Search",
+      description: "Query your cryptographic assets using plain English. Our AI understands context and finds services, algorithms, and vulnerabilities instantly."
     },
     {
       icon: Shield,
-      title: "Security Analysis",
-      description: "Comprehensive security assessment of cryptographic implementations across your infrastructure."
+      title: "Intelligent Security Analysis",
+      description: "AI-driven comprehensive security assessment of cryptographic implementations with automated threat detection across your infrastructure."
     },
     {
       icon: Key,
-      title: "Crypto Materials Tracking",
-      description: "Monitor certificates, keys, and cryptographic materials with expiration tracking and compliance checks."
+      title: "Smart Crypto Materials Tracking",
+      description: "AI monitors certificates, keys, and cryptographic materials with predictive expiration tracking and intelligent compliance checks."
     },
     {
       icon: BarChart3,
-      title: "Risk Assessment",
-      description: "Automated risk scoring and prioritized recommendations for cryptographic vulnerabilities."
+      title: "AI Risk Assessment",
+      description: "Machine learning algorithms provide automated risk scoring and AI-generated prioritized recommendations for cryptographic vulnerabilities."
     },
     {
       icon: Lock,
-      title: "PQC Readiness",
-      description: "Assess your organization's readiness for post-quantum cryptography migration."
+      title: "AI-Guided PQC Readiness",
+      description: "Artificial intelligence assesses your organization's readiness for post-quantum cryptography migration with smart recommendations."
     },
     {
       icon: Layers,
-      title: "Component Analysis",
-      description: "Deep dive into libraries, algorithms, and their usage patterns across applications."
+      title: "Intelligent Component Analysis",
+      description: "AI-powered deep dive into libraries, algorithms, and their usage patterns with automated insights across applications."
     }
   ];
 
@@ -79,8 +82,14 @@ const Home: React.FC = () => {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Cryptographic Asset Intelligence</h1>
-              <p className="text-sm text-gray-600">Comprehensive analysis of cryptographic components and materials</p>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-2xl font-bold text-gray-900">Cryptographic Asset Intelligence</h1>
+                <Badge className="bg-blue-100 text-blue-800 text-xs flex items-center gap-1">
+                  <Brain className="h-3 w-3" />
+                  AI-Powered
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-600">AI-driven comprehensive analysis of cryptographic components and materials</p>
             </div>
           </div>
         </div>
@@ -90,20 +99,25 @@ const Home: React.FC = () => {
       <section className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Brain className="h-8 w-8 text-blue-200" />
+              <span className="text-lg font-semibold text-blue-200">Powered by Artificial Intelligence</span>
+            </div>
             <h2 className="text-4xl font-bold mb-6">
-              Secure Your Cryptographic Infrastructure
+              AI-Driven Cryptographic Security Intelligence
             </h2>
             <p className="text-xl mb-8 text-blue-100">
-              Discover, analyze, and manage cryptographic assets across your entire technology stack. 
-              Get insights into security risks, compliance status, and post-quantum readiness.
+              Harness the power of artificial intelligence to discover, analyze, and manage cryptographic assets across your entire technology stack. 
+              Get AI-generated insights into security risks, compliance status, and post-quantum readiness.
             </p>
             <div className="flex gap-4 justify-center">
               <Button 
                 size="lg" 
-                className="bg-white text-blue-600 hover:bg-gray-100"
+                className="bg-white text-blue-600 hover:bg-gray-100 flex items-center gap-2"
                 onClick={() => navigate('/cbom-viewer')}
               >
-                Start Analysis
+                <Zap className="h-5 w-5" />
+                Start AI Analysis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -135,13 +149,17 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Brain className="h-6 w-6 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-600 uppercase tracking-wide">AI-Powered Platform</span>
+              </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                What is Cryptographic Asset Intelligence?
+                What is AI-Driven Cryptographic Asset Intelligence?
               </h3>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                Our platform provides comprehensive visibility into your organization's cryptographic posture. 
-                From identifying deprecated algorithms to preparing for post-quantum cryptography, 
-                we help you maintain security and compliance across your entire infrastructure.
+                Our AI-powered platform provides comprehensive visibility into your organization's cryptographic posture. 
+                Using machine learning and natural language processing, we help you identify deprecated algorithms, 
+                prepare for post-quantum cryptography, and maintain security and compliance across your entire infrastructure.
               </p>
             </div>
 
@@ -153,7 +171,7 @@ const Home: React.FC = () => {
                   <div className="text-2xl font-bold text-green-800 mb-2">
                     {platformMetrics.pqcReadiness}%
                   </div>
-                  <div className="text-sm text-green-700">PQC Ready Services</div>
+                  <div className="text-sm text-green-700">AI-Assessed PQC Ready Services</div>
                 </CardContent>
               </Card>
 
@@ -163,7 +181,7 @@ const Home: React.FC = () => {
                   <div className="text-2xl font-bold text-yellow-800 mb-2">
                     92%
                   </div>
-                  <div className="text-sm text-yellow-700">Security Score</div>
+                  <div className="text-sm text-yellow-700">AI-Generated Security Score</div>
                 </CardContent>
               </Card>
 
@@ -173,7 +191,7 @@ const Home: React.FC = () => {
                   <div className="text-2xl font-bold text-red-800 mb-2">
                     {platformMetrics.criticalIssues}
                   </div>
-                  <div className="text-sm text-red-700">Critical Issues</div>
+                  <div className="text-sm text-red-700">AI-Detected Critical Issues</div>
                 </CardContent>
               </Card>
             </div>
@@ -186,11 +204,15 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Zap className="h-6 w-6 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-600 uppercase tracking-wide">AI Capabilities</span>
+              </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                Platform Capabilities
+                Intelligent Platform Capabilities
               </h3>
               <p className="text-lg text-gray-600">
-                Comprehensive tools for cryptographic asset management and security analysis
+                Comprehensive AI-powered tools for cryptographic asset management and security analysis
               </p>
             </div>
 
@@ -214,18 +236,23 @@ const Home: React.FC = () => {
       {/* Call to Action */}
       <section className="py-16 bg-blue-600 text-white">
         <div className="container mx-auto px-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Brain className="h-8 w-8 text-blue-200" />
+            <span className="text-lg font-semibold text-blue-200">AI-Powered Security</span>
+          </div>
           <h3 className="text-3xl font-bold mb-4">
-            Ready to Secure Your Cryptographic Assets?
+            Ready to Harness AI for Cryptographic Security?
           </h3>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Start analyzing your infrastructure today and get insights into your cryptographic security posture.
+            Start your AI-driven analysis today and get intelligent insights into your cryptographic security posture.
           </p>
           <Button 
             size="lg" 
-            className="bg-white text-blue-600 hover:bg-gray-100"
+            className="bg-white text-blue-600 hover:bg-gray-100 flex items-center gap-2"
             onClick={() => navigate('/cbom-viewer')}
           >
-            Start Analysis
+            <Zap className="h-5 w-5" />
+            Start AI Analysis
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -237,9 +264,13 @@ const Home: React.FC = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="h-6 w-6 text-blue-400" />
             <span className="text-lg font-semibold">Cryptographic Asset Intelligence</span>
+            <Badge className="bg-blue-900 text-blue-200 text-xs flex items-center gap-1">
+              <Brain className="h-3 w-3" />
+              AI-Powered
+            </Badge>
           </div>
           <p className="text-sm">
-            Comprehensive cryptographic security analysis and management platform
+            AI-driven comprehensive cryptographic security analysis and management platform
           </p>
         </div>
       </footer>
